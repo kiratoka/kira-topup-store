@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import React, { useState, useEffect, useRef } from "react";
-import { Home, User, Mail, Settings, Menu } from "lucide-react";
+import { Home, User, Mail, Settings, Menu, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { div } from "framer-motion/m";
 
@@ -75,6 +75,7 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
                 <div className="space-y-4 mt-14">
                     {[
                         { icon: <Home className="w-5 h-5 text-gray-300" />, text: "Home", link: "/" },
+                        { icon: <BookOpen className="w-5 h-5 text-gray-300" />, text: "Blog", link: "/blog" },
                         { icon: <User className="w-5 h-5 text-gray-300" />, text: "Profile", link: "/" },
                         { icon: <Mail className="w-5 h-5 text-gray-300" />, text: "Messages", link: "/" },
                         { icon: <Settings className="w-5 h-5 text-gray-300" />, text: "Settings", link: "/" },

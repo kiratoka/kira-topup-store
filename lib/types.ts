@@ -47,3 +47,18 @@ export interface BlogPost {
   };
   tags: string[];
 }
+
+interface FrontMatter {
+  title: string;
+  excerpt: string;
+  coverImage: string;
+  date: string;
+  readingTime: string;
+  author: string;
+  tags?: string[];
+}
+
+interface Post {
+  content: string;
+  frontMatter: FrontMatter;
+}
