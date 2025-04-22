@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Invoice {
+  id           String    @id @default(uuid())
+  orderId      String    @unique
+  token        String
+  product      Json
+  customer     Json
+  createdAt    DateTime  @default(now())
+  status       String    @default("pending")
+  
+  // Info pembayaran
+  paymentMethod String?
+  paymentTime   DateTime?
+  transactionId String?
+  
+  // Timestamps
+  updatedAt    DateTime  @updatedAt
+  
+  @@map("invoices")
+}
+
+// Tambahkan model lain yang lo butuhkan di sini
+// Contoh:
+
+model Game {
+  id             String    @id @default(uuid())
+  name           String
+  image          String
+  description    String
+  requiresServer Boolean   @default(false)
+  serverOptions  Json?
+  instructions   Json
+  products       Product[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  @@map("games")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  type        String
+  gameId      String
+  image       String
+  currency    Json
+  validity    String?
+  featured    Boolean  @default(false)
+  popular     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  game        Game     @relation(fields: [gameId], references: [id])
+  
+  @@map("products")
+}

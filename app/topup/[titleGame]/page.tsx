@@ -11,8 +11,8 @@ interface PageProps {
   params: { titleGame: string }
 }
 
-export default function TopUpPage({ params }: PageProps) {
-  const { titleGame } = params;
+export default async function TopUpPage({ params }: PageProps) {
+  const { titleGame } = await params;
   const gameInfo = gamesData[titleGame];
   const products = productsData[titleGame];
 

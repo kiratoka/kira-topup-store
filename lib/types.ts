@@ -1,4 +1,3 @@
-// types.ts
 export type ServerOption = {
   id: string;
   name: string;
@@ -32,7 +31,42 @@ export type TopUpProduct = {
   popular?: boolean;
 }
 
+export interface CustomerDetails {
+  email: string;
+  userId: string;
+  serverId?: string;
+  gameId: string;
+}
 
+export interface ProductDetails {
+  id: string;
+  name: string;
+  price: number;
+  currency: {
+    amount: number;
+    bonus?: number;
+    name?: string;
+  };
+}
+
+export interface PaymentRequest {
+  customer: CustomerDetails;
+  product: ProductDetails;
+}
+
+export interface InvoiceData {
+  id: string;
+  orderId: string;
+  token: string;
+  product: ProductDetails;
+  customer: CustomerDetails;
+  createdAt: string | Date;
+  status: 'pending' | 'success' | 'failed' | 'expired';
+  paymentMethod?: string | null;
+  paymentTime?: string | Date | null;
+  transactionId?: string | null;
+  updatedAt: string | Date;
+}
 
 export interface BlogPost {
   slug: string;
