@@ -101,7 +101,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                 }
             });
 
-            const { token } = response.data;
+            const { token, orderId } = response.data;
 
             window.snap.pay(token, {
                 onSuccess: (result: any) => {
@@ -123,6 +123,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                 onClose: () => {
                     setIsProcessing(false);
                     console.log('Customer closed the popup without finishing the payment');
+                    window.location.href = `/invoice/${orderId}?status=pending`
                 }
             });
         } catch (error) {

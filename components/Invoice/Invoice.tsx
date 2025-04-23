@@ -75,6 +75,7 @@ const Invoice = () => {
                     window.location.href = `/invoice/${orderId}?status=pending`;
                 },
                 onClose: function () {
+                    
                     console.log('Customer closed the payment window');
                 }
             });
