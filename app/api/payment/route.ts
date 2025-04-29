@@ -3,15 +3,28 @@ import { nanoid } from "nanoid"
 import { PaymentRequest } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from "@/lib/rate-limit";
 const midtransClient = require('midtrans-client');
 
 export async function POST(req: Request) {
 
+    // Dapetin IP address
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
+
+    // Check rate limit (10 request per menit)
+    const isLimited = await rateLimit(ip, 10, 60 * 1000);
+    if (isLimited) {
+        return NextResponse.json(
+            { success: false, message: 'Too many requests, coba lagi nanti yaa' },
+            { status: 429 }
+        );
+    }
 
     try {
         const body: PaymentRequest = await req.json();
         console.log(body);
-        
+
         const { product, customer } = body;
 
         // Inisialisasi Snap dalam mode sandbox
@@ -101,4 +114,3 @@ export async function POST(req: Request) {
     }
 }
 
-    
