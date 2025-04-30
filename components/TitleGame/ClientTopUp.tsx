@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Shield, CreditCard, Wallet, AlertCircle } from 'lucide-react';
 import { GameInfo, TopUpProduct } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TitleGameAlertDialog from './TitleGameAlertDialog';
 import FormTopUp from './FormTopUp';
 
@@ -126,10 +125,16 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                     window.location.href = `/invoice/${orderId}?status=pending`
                 }
             });
-        } catch (error) {
-            console.error('Payment initiation failed:', error);
-            setErrorMessage("Gagal memulai pembayaran. Silahkan coba lagi.");
-            setShowError(true);
+        } catch (error: any) {
+            // Tambahan: jika error dari axios punya response 429 (rate limit)
+            if (axios.isAxiosError(error) && error.response?.status === 429) {
+                alert(error.response.data?.message || '❌ Terlalu banyak permintaan. Coba lagi nanti.');
+            } else {
+                console.error('Payment initiation failed:', error);
+                setErrorMessage('Gagal memulai pembayaran. Silahkan coba lagi.');
+                setShowError(true);
+            }
+
             setIsProcessing(false);
         }
     };

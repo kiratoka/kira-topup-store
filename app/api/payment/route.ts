@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const isLimited = await rateLimit(ip, 10, 60 * 1000);
     if (isLimited) {
         return NextResponse.json(
-            { success: false, message: 'Too many requests, coba lagi nanti yaa' },
+            { success: false, message: 'Terlalu banyak request, coba lagi nanti yaa, btw kamu nyoba nge hack ya? akwowkowowo' },
             { status: 429 }
         );
     }
