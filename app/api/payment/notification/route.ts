@@ -3,12 +3,45 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 const midtransClient = require('midtrans-client');
+import crypto from 'crypto';
 
 export async function POST(req: Request) {
   console.log(">> POST /api/payment/notification called");
 
   try {
     const notification = await req.json();
+
+
+    const {
+      order_id,
+      status_code,
+      gross_amount,
+      signature_key
+    } = notification;
+
+    if (!order_id || !status_code || !gross_amount || !signature_key) {
+      return NextResponse.json(
+        { success: false, message: 'Data tidak lengkap' },
+        { status: 400 }
+      );
+    }
+
+    // Generate signature untuk verifikasi
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
+    const stringToSign = `${order_id}${status_code}${gross_amount}${serverKey}`;
+    const expectedSignature = crypto
+      .createHash('sha512')
+      .update(stringToSign)
+      .digest('hex');
+
+    // Check signature
+    if (signature_key !== expectedSignature) {
+      console.error('Invalid Midtrans signature!');
+      return NextResponse.json(
+        { success: false, message: 'Signature tidak valid' },
+        { status: 403 }
+      );
+    }
 
     const apiClient = new midtransClient.Snap({
       isProduction: false,
@@ -57,4 +90,3 @@ export async function POST(req: Request) {
     );
   }
 }
-    
