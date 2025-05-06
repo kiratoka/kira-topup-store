@@ -2,7 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-const midtransClient = require('midtrans-client');
+import midtransClient from 'midtrans-client';
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
@@ -78,13 +78,15 @@ export async function POST(req: Request) {
     console.log(`Updated invoice ${orderId} with status: ${invoiceStatus}`);
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Notification Error:", error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to process notification',
-        error: error.message,
+        error: errorMessage,
       },
       { status: 500 }
     );

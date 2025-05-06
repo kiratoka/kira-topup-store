@@ -3,7 +3,7 @@ import { Alert, AlertDescription } from '../ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { AlertDialogFooter, AlertDialogHeader } from '../ui/alert-dialog'
-import { GameInfo, TitleGameAlertDialogProps, TopUpProduct } from '@/lib/types'
+import { TitleGameAlertDialogProps } from '@/lib/types'
 
 
 

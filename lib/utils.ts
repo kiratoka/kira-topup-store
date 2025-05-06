@@ -11,3 +11,7 @@ export function formatCurrency(amount: number, locale = 'id-ID', currency = 'IDR
     currency,
   }).format(amount);
 }
+
+export function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error';
+}

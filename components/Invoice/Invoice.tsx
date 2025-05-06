@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { InvoiceData } from '@/lib/types';
+import { InvoiceData, SnapResponse } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import InvoiceDetails from './InvoiceDetails';
+import { getErrorMessage } from '@/lib/utils';
 
 
 const Invoice = () => {
@@ -39,9 +40,9 @@ const Invoice = () => {
                 }
 
                 setInvoiceData(data.invoice);
-            } catch (err: any) {
+            } catch (err) {
                 console.error('Error fetching invoice:', err);
-                setError(err.message || 'Terjadi kesalahan saat mengambil data invoice');
+                setError(getErrorMessage(err) || 'Terjadi kesalahan saat mengambil data invoice');
             } finally {
                 setIsLoading(false);
             }
@@ -62,20 +63,20 @@ const Invoice = () => {
         // dan kita dapat memanggil snap.pay
         if (window.snap && invoiceData.token) {
             window.snap.pay(invoiceData.token, {
-                onSuccess: function (result: any) {
+                onSuccess: function (result: SnapResponse) {
                     console.log('Payment success:', result);
                     window.location.href = `/invoice/${orderId}`;
                 },
-                onPending: function (result: any) {
+                onPending: function (result: SnapResponse) {
                     console.log('Payment pending:', result);
                     window.location.href = `/invoice/${orderId}?status=error`;
                 },
-                onError: function (result: any) {
+                onError: function (result: SnapResponse) {
                     console.log('Payment error:', result);
                     window.location.href = `/invoice/${orderId}?status=pending`;
                 },
                 onClose: function () {
-                    
+
                     console.log('Customer closed the payment window');
                 }
             });

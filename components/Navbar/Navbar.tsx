@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import React, { useState, useEffect, useRef } from "react";
 import { Home, User, Mail, Settings, Menu, BookOpen } from "lucide-react";
 import Link from "next/link";
-import { div } from "framer-motion/m";
+
 
 const Navbar = ({ children }: { children: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(false);

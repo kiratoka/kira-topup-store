@@ -1,5 +1,5 @@
 import React from 'react';
-import { InvoiceData, TopUpProduct, CustomerDetails } from '@/lib/types';
+import { InvoiceData } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

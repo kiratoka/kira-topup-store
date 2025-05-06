@@ -3,12 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET(
-    req: Request,
-    { params }: { params: { orderId: string } }
+    request: Request,
+    { params }: { params: Promise<{ orderId: string }> }
 ) {
 
     try {
-        const { orderId } = await params;
+        const { orderId } = await params
 
         if (!orderId) {
             return NextResponse.json(
@@ -40,13 +40,16 @@ export async function GET(
                 paymentTime: invoice.paymentTime ? invoice.paymentTime.toISOString() : null,
             },
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching invoice:', error);
+
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
         return NextResponse.json(
             {
                 success: false,
                 message: 'Failed to fetch invoice',
-                error: error.message,
+                error: errorMessage,
             },
             { status: 500 }
         );

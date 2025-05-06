@@ -1,5 +1,6 @@
-import { GameInfo, TitleGameAlertDialogProps, TopUpProduct } from "@/lib/types";
+import { GameInfo, TopUpProduct } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import Image from "next/image";
 
 
 interface FormTopUpProps {
@@ -137,10 +138,12 @@ const FormTopUp = ({
                                 } bg-gray-900 rounded-xl p-4 transition-all duration-200 text-left`}
                         >
                             <div className="flex items-start space-x-4">
-                                <img
+                                <Image
                                     src={product.image}
                                     alt={product.name}
-                                    className="w-16 h-16 rounded-lg"
+                                    width={64}
+                                    height={64}
+                                    className="rounded-lg"
                                 />
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">

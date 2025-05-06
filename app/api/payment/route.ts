@@ -1,18 +1,16 @@
-// app/api/payment/route.ts
-import { nanoid } from "nanoid"
+import { nanoid } from "nanoid";
 import { PaymentRequest } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit } from "@/lib/rate-limit";
-const midtransClient = require('midtrans-client');
+import midtransClient from 'midtrans-client';
 
 export async function POST(req: Request) {
-
-    // Dapetin IP address
+    // Get IP address
     const forwarded = req.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
 
-    // Check rate limit (10 request per menit)
+    // Check rate limit (10 requests per minute)
     const isLimited = await rateLimit(ip, 10, 60 * 1000);
     if (isLimited) {
         return NextResponse.json(
@@ -27,17 +25,17 @@ export async function POST(req: Request) {
 
         const { product, customer } = body;
 
-        // Inisialisasi Snap dalam mode sandbox
+        // Initialize Snap in sandbox mode
         const snap = new midtransClient.Snap({
             isProduction: false,
-            serverKey: process.env.MIDTRANS_SERVER_KEY,
-            clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
+            serverKey: process.env.MIDTRANS_SERVER_KEY || '',
+            clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
         });
 
         // Generate unique order ID
         const orderId = `ORDER-${nanoid()}`;
 
-        // Siapkan item details untuk Midtrans
+        // Prepare item details for Midtrans
         const itemDetails = [{
             id: product.id,
             price: product.price,
@@ -45,7 +43,7 @@ export async function POST(req: Request) {
             name: product.name,
         }];
 
-        // Siapkan parameter untuk Midtrans
+        // Prepare parameters for Midtrans
         const transactionDetails = {
             transaction_details: {
                 order_id: orderId,
@@ -54,7 +52,7 @@ export async function POST(req: Request) {
             item_details: itemDetails,
             customer_details: {
                 email: customer.email,
-                first_name: customer.userId, // Menggunakan userId sebagai nama
+                first_name: customer.userId, // Using userId as name
             },
             custom_field1: customer.gameId,
             custom_field2: customer.serverId || '',
@@ -67,50 +65,50 @@ export async function POST(req: Request) {
         };
 
         try {
-            // Buat transaksi di Midtrans
+            // Create transaction in Midtrans
             const transaction = await snap.createTransaction(transactionDetails);
 
-            // Simpan invoice ke database dengan Prisma
-            const invoice = await prisma.invoice.create({
+            // Save invoice to database using Prisma
+
+            await prisma.invoice.create({
                 data: {
-                    orderId: orderId,
+                    orderId,
                     token: transaction.token,
-                    product: product as any, // Prisma menerima Json type
-                    customer: customer as any, // Prisma menerima Json type
+                    product: JSON.parse(JSON.stringify(product)),
+                    customer: JSON.parse(JSON.stringify(customer)),
                     status: 'pending'
                 }
             });
 
-            // Redirect ke halaman invoice
+
+            // Return payment information
             return NextResponse.json({
                 success: true,
                 token: transaction.token,
-                orderId: orderId,
+                orderId,
                 invoiceUrl: `/invoice/${orderId}`
             });
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('Midtrans Error:', error);
             return NextResponse.json(
                 {
                     success: false,
                     message: 'Failed to create transaction',
-                    error: error.message
+                    error: error instanceof Error ? error.message : 'Unknown error'
                 },
                 { status: 500 }
             );
         }
-
-    } catch (error: any) {
+    } catch (error) {
         console.error('Server Error:', error);
         return NextResponse.json(
             {
                 success: false,
                 message: 'Internal server error',
-                error: error.message
+                error: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         );
     }
 }
-

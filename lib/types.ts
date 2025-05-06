@@ -31,6 +31,12 @@ export type TopUpProduct = {
   popular?: boolean;
 }
 
+export interface ClientTopUpProps {
+  gameId: string;
+  gameInfo: GameInfo;
+  products: TopUpProduct[];
+}
+
 export interface CustomerDetails {
   email: string;
   userId: string;
@@ -82,20 +88,6 @@ export interface BlogPost {
   tags: string[];
 }
 
-interface FrontMatter {
-  title: string;
-  excerpt: string;
-  coverImage: string;
-  date: string;
-  readingTime: string;
-  author: string;
-  tags?: string[];
-}
-
-interface Post {
-  content: string;
-  frontMatter: FrontMatter;
-}
 
 export interface TitleGameAlertDialogProps {
   showError: boolean;
@@ -113,4 +105,33 @@ export interface TitleGameAlertDialogProps {
   handlePayment: () => void;
   showSuccessDialog: boolean;
   setShowSuccessDialog: (success: boolean) => void;
+}
+
+
+export interface SnapResponse {
+  va_numbers: {
+    va_number: string;
+    bank: string;
+  }[];
+  transaction_time: string;
+  transaction_status: string;
+  transaction_id: string;
+  status_message: string;
+  status_code: string;
+  signature_key: string;
+  settlement_time?: string;
+  payment_type: string;
+  payment_amounts: {
+    paid_at: string;
+    amount: string;
+  }[];
+  order_id: string;
+  merchant_id: string;
+  gross_amount: string;
+  fraud_status: string;
+  expiry_time?: string;
+  custom_field1?: string;
+  custom_field2?: string;
+  custom_field3?: string;
+  currency: string;
 }

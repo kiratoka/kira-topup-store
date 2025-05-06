@@ -4,11 +4,12 @@ import React from 'react';
 import { gamesData } from '@/lib/datas/gameData';
 import { productsData } from '@/lib/datas/productData';
 import ClientTopUp from '@/components/TitleGame/ClientTopUp';
+import Image from 'next/image';
 
 
 
 interface PageProps {
-  params: { titleGame: string }
+  params: Promise<{ titleGame: string }>
 }
 
 export default async function TopUpPage({ params }: PageProps) {
@@ -22,10 +23,12 @@ export default async function TopUpPage({ params }: PageProps) {
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="px-4 py-6">
           <div className="flex items-center space-x-4">
-            <img
+            <Image
               src={gameInfo.image}
               alt={gameInfo.name}
-              className="w-16 h-16 rounded-lg"
+              width={64}
+              height={64}
+              className="rounded-lg"
             />
             <div>
               <h1 className="text-2xl font-bold text-white">{gameInfo.name}</h1>

@@ -1,25 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Shield, CreditCard, Wallet, AlertCircle } from 'lucide-react';
-import { GameInfo, TopUpProduct } from '@/lib/types';
+import { ClientTopUpProps, TopUpProduct } from '@/lib/types';
 import TitleGameAlertDialog from './TitleGameAlertDialog';
 import FormTopUp from './FormTopUp';
 
-declare global {
-    interface Window {
-        snap: {
-            pay: (token: string, options: any) => void;
-        };
-    }
-}
-
-interface ClientTopUpProps {
-    gameId: string;
-    gameInfo: GameInfo;
-    products: TopUpProduct[];
-}
 
 const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
     // State untuk validasi form dan input data
@@ -49,20 +36,22 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
     }, []);
 
     // Fungsi untuk validasi form
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         const isUserIdValid = userId.trim().length > 0;
         const isServerValid = !gameInfo.requiresServer || serverId.trim().length > 0;
         const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         const isProductSelected = selectedProduct !== null;
         return { isUserIdValid, isServerValid, isEmailValid, isProductSelected };
-    };
+    }, [userId, serverId, email, selectedProduct, gameInfo.requiresServer]);
+
 
     // Fungsi untuk mengupdate status validasi form
     // Di dalam component ClientTopUp
     useEffect(() => {
         const { isUserIdValid, isServerValid, isEmailValid, isProductSelected } = validateForm();
         setIsFormValid(isUserIdValid && isServerValid && isEmailValid && isProductSelected);
-    }, [userId, serverId, email, selectedProduct, gameInfo.requiresServer]); // Dependencies
+    }, [validateForm]);
+
 
     // Handler untuk klik tombol pembayaran
     const handlePaymentClick = () => {
@@ -103,17 +92,19 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
             const { token, orderId } = response.data;
 
             window.snap.pay(token, {
-                onSuccess: (result: any) => {
+                onSuccess: (result) => {
                     console.log('Payment success:', result);
                     // Tampilkan dialog sukses tanpa mereset form
                     setShowSuccessDialog(true);
                     setIsProcessing(false);
+                    window.location.href = `/invoice/${orderId}`
                 },
-                onPending: (result: any) => {
+                onPending: (result) => {
                     console.log('Payment pending:', result);
                     setIsProcessing(false);
+                    window.location.href = `/invoice/${orderId}?status=pending`
                 },
-                onError: (result: any) => {
+                onError: (result) => {
                     console.error('Payment error:', result);
                     setErrorMessage("Terjadi kesalahan saat memproses pembayaran");
                     setShowError(true);
@@ -125,7 +116,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                     window.location.href = `/invoice/${orderId}?status=pending`
                 }
             });
-        } catch (error: any) {
+        } catch (error) {
             // Tambahan: jika error dari axios punya response 429 (rate limit)
             if (axios.isAxiosError(error) && error.response?.status === 429) {
                 alert(error.response.data?.message || '❌ Terlalu banyak permintaan. Coba lagi nanti.');

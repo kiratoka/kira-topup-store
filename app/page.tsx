@@ -4,6 +4,7 @@ import React from 'react';
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { games } from '@/lib/datas/gameData';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -20,7 +21,7 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 relative z-10">
         {/* Enhanced Header Section */}
-        <motion.div 
+        <motion.div
           className="text-center mb-12"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -31,12 +32,12 @@ export default function Home() {
             <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
           </h1>
           <p className="text-cyan-400 text-lg mb-6">Tempat Top Up Terpercaya</p>
-          
+
           {/* Search Bar */}
           <div className="max-w-md mx-auto mb-8">
             <div className="relative">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Cari game..."
                 className="w-full bg-gray-900/50 border border-cyan-500/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500 backdrop-blur-sm"
               />
@@ -53,7 +54,7 @@ export default function Home() {
         </motion.div>
 
         {/* Game Grid */}
-        <motion.div 
+        <motion.div
           className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-4"
           variants={{
             hidden: { opacity: 0 },
@@ -78,10 +79,12 @@ export default function Home() {
               <Link href={game.link} className="block h-full">
                 <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg overflow-hidden h-full flex flex-col transform transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] border border-cyan-500/20">
                   <div className="relative w-full pt-[100%] group">
-                    <img
+                    <Image
                       src={game.image}
                       alt={`${game.name} Logo`}
-                      className="absolute top-0 left-0 w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      style={{ objectPosition: "center" }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                       <span className="text-cyan-500 text-sm">Lihat detail</span>
@@ -100,7 +103,7 @@ export default function Home() {
         </motion.div>
 
         {/* Featured Section */}
-        <motion.div 
+        <motion.div
           className="mt-16 bg-gray-900/30 backdrop-blur-md rounded-xl p-8 border border-cyan-500/20"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
