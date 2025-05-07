@@ -16,3 +16,10 @@ body {
 body {
 background-color: black;
 }
+
+
+@media (min-width: 400px) {
+  .customGrid {
+   @apply grid-cols-3
+  }
+}

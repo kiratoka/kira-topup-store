@@ -13,7 +13,7 @@ export default async function BlogPage() {
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="bg-gradient-to-r from-black to-cyan-950 py-20">
         <div className="container mx-auto px-8">
-          <h1 className="text-5xl font-bold text-white mb-4">
+          <h1 className="text-5xl max-sm:text-center font-bold text-white mb-4">
             <span className="text-cyan-400">Game</span> Blog
           </h1>
           <p className="text-gray-300 text-lg max-w-2xl">

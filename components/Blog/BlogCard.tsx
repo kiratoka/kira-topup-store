@@ -14,7 +14,7 @@ type BlogCardProps = {
 export default function BlogCard({ title, date, excerpt, slug, readingTime, coverImage }: BlogCardProps) {
   return (
     <Link href={`/blog/${slug}`}>
-      <div className="group cursor-pointer overflow-hidden rounded-lg border border-cyan-800 bg-black hover:shadow-cyan-500/20 hover:shadow-lg transition-all duration-300">
+      <div className="h-full group cursor-pointer overflow-hidden rounded-lg border border-cyan-800 bg-black hover:shadow-cyan-500/20 hover:shadow-lg transition-all duration-300">
         <div className="relative h-48 w-full overflow-hidden">
           <Image
             src={coverImage}

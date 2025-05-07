@@ -55,7 +55,7 @@ export default function Home() {
 
         {/* Game Grid */}
         <motion.div
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-4"
+          className="grid customGrid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-4"
           variants={{
             hidden: { opacity: 0 },
             show: {
