@@ -8,11 +8,7 @@ import TitleGameAlertDialog from './TitleGameAlertDialog';
 import FormTopUp from './FormTopUp';
 
 // Declare window.snap type
-declare global {
-    interface Window {
-        snap: any;
-    }
-}
+
 
 const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
     // State untuk validasi form dan input data
