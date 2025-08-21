@@ -7,7 +7,6 @@ import { ClientTopUpProps, TopUpProduct } from '@/lib/types';
 import TitleGameAlertDialog from './TitleGameAlertDialog';
 import FormTopUp from './FormTopUp';
 
-
 const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
     // State untuk validasi form dan input data
     const [isFormValid, setIsFormValid] = useState(false);
@@ -22,38 +21,48 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
     const [showValidationDialog, setShowValidationDialog] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-    const [isMidtransReady, setIsMidtransReady] = useState(false);
+    
+    // State untuk tracking apakah Midtrans Snap sudah ready
+    const [isSnapReady, setIsSnapReady] = useState(false);
 
-
-    const checkMidtransReady = () => {
+    // Fungsi untuk menunggu sampai Midtrans Snap ready
+    const waitForSnap = (): Promise<void> => {
         return new Promise((resolve) => {
-            const checkInterval = setInterval(() => {
+            const checkSnap = () => {
                 if (window.snap) {
-                    clearInterval(checkInterval);
-                    setIsMidtransReady(true);
-                    resolve(true);
+                    setIsSnapReady(true);
+                    resolve();
+                } else {
+                    setTimeout(checkSnap, 100); // Check setiap 100ms
                 }
-            }, 100); // Check setiap 100ms
-
-            // Timeout setelah 10 detik
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                if (!window.snap) {
-                    resolve(false);
-                }
-            }, 10000);
+            };
+            checkSnap();
         });
     };
 
-    // Tambahkan script Midtrans Snap ke head
+    // Tambahkan script Midtrans Snap ke head dan tunggu sampai ready
     useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '');
+        
+        script.onload = () => {
+            // Tunggu sampai window.snap tersedia
+            waitForSnap();
+        };
+        
+        script.onerror = () => {
+            console.error('Failed to load Midtrans Snap script');
+            setErrorMessage('Gagal memuat script pembayaran. Silahkan refresh halaman.');
+            setShowError(true);
+        };
+
         document.head.appendChild(script);
 
         return () => {
-            document.head.removeChild(script);
+            if (document.head.contains(script)) {
+                document.head.removeChild(script);
+            }
         };
     }, []);
 
@@ -66,14 +75,11 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
         return { isUserIdValid, isServerValid, isEmailValid, isProductSelected };
     }, [userId, serverId, email, selectedProduct, gameInfo.requiresServer]);
 
-
     // Fungsi untuk mengupdate status validasi form
-    // Di dalam component ClientTopUp
     useEffect(() => {
         const { isUserIdValid, isServerValid, isEmailValid, isProductSelected } = validateForm();
         setIsFormValid(isUserIdValid && isServerValid && isEmailValid && isProductSelected);
     }, [validateForm]);
-
 
     // Handler untuk klik tombol pembayaran
     const handlePaymentClick = () => {
@@ -91,7 +97,14 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
             return;
         }
 
-        // Jika form valid, tampilkan dialog konfirmasi
+        // Cek apakah Midtrans Snap sudah ready
+        if (!isSnapReady) {
+            setErrorMessage('Sistem pembayaran sedang dimuat. Silahkan tunggu sebentar.');
+            setShowError(true);
+            return;
+        }
+
+        // Jika form valid dan Snap sudah ready, tampilkan dialog konfirmasi
         setShowConfirmDialog(true);
     };
 
@@ -101,13 +114,10 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
             setIsProcessing(true);
             setShowConfirmDialog(false); // Tutup dialog konfirmasi sebelum memulai pembayaran
 
-            const isReady = await checkMidtransReady();
-            if (!isReady) {
-                console.error("❌ Midtrans tidak siap setelah 10 detik");
-                setErrorMessage("Sistem pembayaran belum siap. Silakan refresh halaman dan coba lagi.");
-                setShowError(true);
-                setIsProcessing(false);
-                return;
+            // Double check apakah Snap sudah ready sebelum melanjutkan
+            if (!isSnapReady || !window.snap) {
+                console.log('Waiting for Midtrans Snap to be ready...');
+                await waitForSnap();
             }
 
             const response = await axios.post('/api/payment', {
@@ -122,20 +132,10 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
 
             const { token, orderId } = response.data;
 
-            if (!token) {
-                console.error("❌ Token kosong, Snap tidak bisa jalan.");
-                setIsProcessing(false);
-                return;
-            }
-
+            // Pastikan window.snap tersedia sebelum memanggil pay
             if (!window.snap) {
-                console.error("❌ window.snap belum siap.");
-                alert("Midtrans belum siap, coba beberapa detik lagi.");
-                setIsProcessing(false);
-                return;
+                throw new Error('Midtrans Snap not available');
             }
-
-            console.log("✅ Menjalankan Snap popup...");
 
             window.snap.pay(token, {
                 onSuccess: (result) => {
@@ -143,12 +143,12 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                     // Tampilkan dialog sukses tanpa mereset form
                     setShowSuccessDialog(true);
                     setIsProcessing(false);
-                    window.location.href = `/invoice/${orderId}`
+                    window.location.href = `/invoice/${orderId}`;
                 },
                 onPending: (result) => {
                     console.log('Payment pending:', result);
                     setIsProcessing(false);
-                    window.location.href = `/invoice/${orderId}?status=pending`
+                    window.location.href = `/invoice/${orderId}?status=pending`;
                 },
                 onError: (result) => {
                     console.error('Payment error:', result);
@@ -159,7 +159,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                 onClose: () => {
                     setIsProcessing(false);
                     console.log('Customer closed the popup without finishing the payment');
-                    window.location.href = `/invoice/${orderId}?status=pending`
+                    window.location.href = `/invoice/${orderId}?status=pending`;
                 }
             });
         } catch (error) {
@@ -181,22 +181,19 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
         const value = e.target.value.replace('-', '');
         if (value === '' || parseInt(value) >= 0) {
             setServerId(value);
-
         }
     };
+
     const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace('-', '');
         if (value === '' || parseInt(value) >= 0) {
             setUserId(value);
-
         }
     };
-
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             <div>
-
                 <TitleGameAlertDialog
                     showError={showError}
                     errorMessage={errorMessage}
@@ -233,13 +230,21 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                     setSelectedProduct={setSelectedProduct}
                     isProcessing={isProcessing}
                     handlePaymentClick={handlePaymentClick}
-                    isFormValid={isFormValid}
+                    isFormValid={isFormValid && isSnapReady} // Tambahkan kondisi isSnapReady
                 />
-
-
 
                 {/* Kolom Kanan: Informasi Tambahan */}
                 <div className="space-y-6">
+                    {/* Loading indicator untuk Snap */}
+                    {!isSnapReady && (
+                        <div className="bg-yellow-900 rounded-xl p-4">
+                            <div className="flex items-center space-x-3">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
+                                <span className="text-sm text-yellow-300">Memuat sistem pembayaran...</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Keunggulan Kami */}
                     <div className="bg-gray-900 rounded-xl p-6">
                         <h3 className="text-lg font-semibold mb-4">Keunggulan Kami</h3>
