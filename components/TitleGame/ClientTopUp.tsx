@@ -52,7 +52,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
         setIsFormValid(isUserIdValid && isServerValid && isEmailValid && isProductSelected);
     }, [validateForm]);
 
-    
+
     // Handler untuk klik tombol pembayaran
     const handlePaymentClick = () => {
         const { isUserIdValid, isServerValid, isEmailValid, isProductSelected } = validateForm();
@@ -90,6 +90,20 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
             });
 
             const { token, orderId } = response.data;
+
+            if (!token) {
+                console.error("❌ Token kosong, Snap tidak bisa jalan.");
+                setIsProcessing(false);
+                return;
+              }
+            if (!window.snap) {
+                console.error("❌ window.snap belum siap.");
+                alert("Midtrans belum siap, coba beberapa detik lagi.");
+                setIsProcessing(false);
+                return;
+            }
+
+            console.log("✅ Menjalankan Snap popup...");
 
             window.snap.pay(token, {
                 onSuccess: (result) => {
