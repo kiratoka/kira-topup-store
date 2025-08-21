@@ -27,8 +27,18 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self'; form-action 'self';", // CSP penting untuk nilai A
-          },
+            value:
+              "default-src 'self'; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.sandbox.midtrans.com https://app.midtrans.com; " +
+              "style-src 'self' 'unsafe-inline'; " +
+              "img-src 'self' data: https:; " +
+              "font-src 'self' data:; " +
+              "connect-src 'self' https://app.sandbox.midtrans.com https://app.midtrans.com; " +
+              "frame-src https://app.sandbox.midtrans.com https://app.midtrans.com; " +
+              "frame-ancestors 'self'; " +
+              "form-action 'self';"
+          }
+          ,
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block', // Proteksi XSS tambahan untuk browser lama
