@@ -1,40 +1,60 @@
 // lib/rate-limit.ts
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 
-// Setup Redis client
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || '',
-    token: process.env.UPSTASH_REDIS_REST_TOKEN|| '',
-});
+/**
+ * Extracts client IP address from incoming request headers.
+ *
+ * Header precedence:
+ * 1. `x-real-ip`: Set or overwritten by trusted reverse proxies (Nginx, Traefik, AWS ALB, Caddy, Vercel)
+ *    representing the authentic client socket address.
+ * 2. `cf-connecting-ip`: Set or overwritten by Cloudflare edge proxy.
+ * 3. `x-forwarded-for`: Fallback taking the first comma-separated IP.
+ *    NOTE: To prevent IP spoofing, upstream reverse proxies must sanitize or overwrite headers,
+ *    or provide x-real-ip / cf-connecting-ip.
+ *
+ * Returns 'unknown' if no client IP headers are present.
+ */
+export function getClientIp(req: Request): string {
+  const xRealIp = req.headers.get('x-real-ip');
+  if (xRealIp?.trim()) {
+    return xRealIp.trim();
+  }
 
-export async function rateLimit(ip: string, limit = 10, windowMs = 60000) {
-    const now = Date.now();
-    const key = `rate-limit:${ip}`;
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIp?.trim()) {
+    return cfConnectingIp.trim();
+  }
 
-    // Dapetin request count dan last reset time
-    const [count, resetTime] = await redis.pipeline()
-        .get(key)
-        .get(`${key}:resetTime`)
-        .exec() as [number | null, number | null];
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded?.trim()) {
+    return forwarded.split(',')[0].trim();
+  }
 
-    let currentCount = count ? parseInt(count.toString()) : 0;
-    const resetTimeVal = resetTime ? parseInt(resetTime.toString()) : now;
+  return 'unknown';
+}
 
-    // Reset count kalo udah lewat window time
-    if (now > resetTimeVal) {
-        currentCount = 0;
-        await redis.pipeline()
-            .set(`${key}:resetTime`, now + windowMs)
-            .exec();
+export async function rateLimit(ip: string, limit = 10, windowMs = 60000): Promise<boolean> {
+  try {
+    const client = await getRedis();
+    if (!client) {
+      // Jika client Redis tidak dapat terhubung, jangan gagalkan alur pembayaran
+      console.warn('[RateLimit] Redis tidak tersedia, permintaan diloloskan');
+      return false;
     }
 
-    // Increment count
-    currentCount++;
-    await redis.set(key, currentCount);
+    const key = `rate-limit:${ip}`;
+    const count = await client.incr(key);
 
-    // Set TTL supaya ga makan memori
-    await redis.expire(key, Math.floor(windowMs / 1000));
+    if (count === 1) {
+      const ttlSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+      await client.expire(key, ttlSeconds);
+    }
 
-    // Return true kalo udah kena limit
-    return currentCount > limit;
+    // Return true jika request melebihi limit
+    return count > limit;
+  } catch (error) {
+    console.error('[RateLimit Error]', error);
+    // Fail open: kembalikan false agar transaksi tidak terblokir saat terjadi kendala koneksi
+    return false;
+  }
 }

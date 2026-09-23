@@ -57,7 +57,8 @@ export interface ProductDetails {
 
 export interface PaymentRequest {
   customer: CustomerDetails;
-  product: ProductDetails;
+  productId?: string;
+  product?: ProductDetails;
 }
 
 export interface InvoiceData {

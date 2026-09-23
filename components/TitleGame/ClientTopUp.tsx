@@ -80,6 +80,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
             setShowConfirmDialog(false); // Tutup dialog konfirmasi sebelum memulai pembayaran
 
             const response = await axios.post('/api/payment', {
+                productId: selectedProduct?.id,
                 product: selectedProduct,
                 customer: {
                     email: email,
@@ -117,9 +118,25 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                 }
             });
         } catch (error) {
-            // Tambahan: jika error dari axios punya response 429 (rate limit)
-            if (axios.isAxiosError(error) && error.response?.status === 429) {
-                alert(error.response.data?.message || '❌ Terlalu banyak permintaan. Coba lagi nanti.');
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 429) {
+                    alert(error.response.data?.message || '❌ Terlalu banyak permintaan. Coba lagi nanti.');
+                } else if (error.response?.status === 400) {
+                    const errorData = error.response.data;
+                    let msg = errorData?.message || 'Data pembayaran tidak valid.';
+                    if (errorData?.errors && typeof errorData.errors === 'object') {
+                        const fieldErrors = Object.values(errorData.errors);
+                        if (fieldErrors.length > 0 && typeof fieldErrors[0] === 'string') {
+                            msg = `${msg}: ${fieldErrors[0]}`;
+                        }
+                    }
+                    setErrorMessage(msg);
+                    setShowError(true);
+                } else {
+                    console.error('Payment initiation failed:', error);
+                    setErrorMessage(error.response?.data?.message || 'Gagal memulai pembayaran. Silahkan coba lagi.');
+                    setShowError(true);
+                }
             } else {
                 console.error('Payment initiation failed:', error);
                 setErrorMessage('Gagal memulai pembayaran. Silahkan coba lagi.');

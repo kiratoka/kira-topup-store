@@ -414,3 +414,18 @@ export const productsData: Record<string, TopUpProduct[]> = {
     }
   ]
 };
+
+/**
+ * Retrieve canonical product details by game ID and product ID.
+ * Returns undefined if either the game or the product does not exist in master catalog.
+ */
+export function getProductById(gameId: string, productId: string): TopUpProduct | undefined {
+  if (!Object.hasOwn(productsData, gameId)) {
+    return undefined;
+  }
+  const gameProducts = productsData[gameId];
+  if (!Array.isArray(gameProducts)) {
+    return undefined;
+  }
+  return gameProducts.find((p) => p.id === productId);
+}
