@@ -6,6 +6,8 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.0-alpha] - 2026-10-14
+
 ### Added
 - Validasi skema Zod ketat untuk data masukan transaksi pembayaran meliputi email, userId, serverId, gameId, dan productId (lihat spec 0002).
 - Fungsi pencarian produk resmi di katalog server dengan perlindungan terhadap collision properti objek prototype.
