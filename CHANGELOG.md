@@ -6,6 +6,20 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.2.0-alpha] - 2026-10-14
+
+### Added
+- Komponen antarmuka modular untuk alur transaksi top up meliputi GameHeader, AccountInfoSection, ProductSelectionSection, ProductCard, BenefitsSidebar, dan StickyCheckoutBar.
+- Bilah checkout melayang pada bagian bawah layar yang menyajikan ringkasan pesanan serta akses tombol pembayaran secara praktis.
+- Tampilan kartu produk dengan penanda lencana promo, rincian bonus, dan status pilihan aktif.
+- Pembangkit metadata dinamis untuk optimasi mesin pencari pada rute halaman top up setiap game.
+- Pola latar belakang visual kisi teknologi pada halaman transaksi game.
+
+### Changed
+- Struktur halaman top up dirombak dari rancangan monolitik menjadi tata letak modular yang bersih dan mudah dirawat.
+- Tampilan dialog konfirmasi pesanan dan notifikasi validasi diselaraskan dengan tema visual modern.
+- Model data produk diperkaya dengan properti lencana promosi dan rincian bonus mata uang game.
+
 ## [0.1.0-alpha] - 2026-10-14
 
 ### Added

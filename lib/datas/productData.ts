@@ -101,7 +101,8 @@ export const productsData: Record<string, TopUpProduct[]> = {
       validity: "7 hari",
       currency: { name: "Weekly diamond pass", amount: 1 },
       featured: true,
-      popular: true ,
+      popular: true,
+      badge: "POPULAR - 445%",
     },
     {
       id: "diamond-50",
@@ -123,7 +124,7 @@ export const productsData: Record<string, TopUpProduct[]> = {
       gameId: "mobile-legends",
       image:
         "https://cdn1.codashop.com/S/content/common/images/denom-image/MLBB/150x150/150x250_MLBB_NewDemom.png",
-      currency: { name: "Diamond", amount: 100 }
+      currency: { name: "Diamond", amount: 100, bonus: 10 }
     },
     {
       id: "diamond-250",
@@ -134,7 +135,7 @@ export const productsData: Record<string, TopUpProduct[]> = {
       gameId: "mobile-legends",
       image:
         "https://cdn1.codashop.com/S/content/common/images/denom-image/MLBB/150x150/150x250_MLBB_NewDemom.png",
-      currency: { name: "Diamond", amount: 250 },
+      currency: { name: "Diamond", amount: 250, bonus: 25 },
       popular: false
     },
     {
@@ -146,7 +147,7 @@ export const productsData: Record<string, TopUpProduct[]> = {
       gameId: "mobile-legends",
       image:
         "https://cdn1.codashop.com/S/content/common/images/denom-image/MLBB/150x150/500_MLBB_NewDemom.png",
-      currency: { name: "Diamond", amount: 500 }
+      currency: { name: "Diamond", amount: 500, bonus: 65 }
     },
     {
       id: "diamond-1000",

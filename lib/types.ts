@@ -29,6 +29,7 @@ export type TopUpProduct = {
   validity?: string;
   featured?: boolean;
   popular?: boolean;
+  badge?: string;
 }
 
 export interface ClientTopUpProps {
