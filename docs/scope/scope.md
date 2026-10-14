@@ -15,8 +15,9 @@ _Rekomendasi ini disusun untuk menjaga pembangunan aplikasi tetap teratur. Anda 
 | B | Invoice lookup and status display | Storefront | existing |
 | 1 | Redis Cloud migration | Infrastructure | done |
 | 2 | Server side price validation | Security | done |
-| 3 | Webhook security and idempotency | Security | planned |
-| 4 | Error sanitization and env guard | Security | planned |
+| 3 | Webhook security and idempotency | Security | done |
+| 4 | Error sanitization and env guard | Security | done |
+| 5 | Living architecture and security diagrams | Documentation | done |
 
 ## Existing features
 
@@ -56,15 +57,53 @@ Memastikan harga dan data produk selalu divalidasi dari data master di server se
 - [x] Document it: `/document server-side-price-validation`
 Spec [0002](../specs/0002-server-side-price-validation/index.md) · code in `app/api/payment/route.ts` and `lib/validations/`
 
-### 3. Webhook security and idempotency · needs a decision
+### 3. Webhook security and idempotency · done
 Mengamankan endpoint notifikasi Midtrans dari pemalsuan data status dan eksekusi ganda dengan verifikasi tanda tangan timing safe, pembatasan laju request, dan penanganan idempoten.
 **Done when:** webhook memverifikasi signature menggunakan perbandingan waktu konstan, membatasi request per menit melalui Redis, dan mengabaikan notifikasi berulang untuk transaksi yang sudah berstatus akhir.
-- [ ] Design it (spec): `/architect webhook-security-idempotency`
+- [x] Design it (spec): `/architect webhook-security-idempotency`
+- [x] Build it: `/develop webhook-security-idempotency`
+    - [x] Tambah parameter `keyPrefix` opsional ke `rateLimit` di `lib/rate-limit.ts` (AC-2, AC-5)
+    - [x] Tambah rate limiting + timing-safe signature comparison di `notification/route.ts` (AC-1, AC-2, AC-5)
+    - [x] Tambah idempotency check dan penanganan order not found (AC-3, AC-4, AC-6)
+- [x] Verify it: `/check verify webhook-security-idempotency`
+- [x] Test it: `/test webhook-security-idempotency`
+- [x] Review it (fresh model): `/check review webhook-security-idempotency`
+- [x] Document it: `/document webhook-security-idempotency`
+Spec [0003](../specs/0003-webhook-security-idempotency/index.md) · code in `app/api/payment/notification/route.ts` and `lib/rate-limit.ts`
 
-### 4. Error sanitization and env guard · needs a decision
+### 4. Error sanitization and env guard · done
 Menstandarkan respon galat pada seluruh rute API publik agar tidak membocorkan informasi internal server, jejak error, atau respon informal ke pengguna publik.
 **Done when:** seluruh rute API mengembalikan pesan galat terstandar tanpa jejak teknis internal, pesan respon informal dibersihkan, dan validasi variabel lingkungan produksi aktif.
-- [ ] Design it (spec): `/architect error-sanitization`
+- [x] Design it (spec): `/architect error-sanitization`
+- [x] Build it: `/develop error-sanitization`
+    - [x] Buat lib/env.ts (Zod schema 5 env vars, fail-fast import) dan lib/errors.ts (apiError helper) (AC-5, AC-6, AC-7)
+    - [x] Perbaiki GET /api/invoice/[orderId] — hapus error field bocor, gunakan apiError(), Bahasa Indonesia (AC-1, AC-2, AC-3)
+    - [x] Buat GET /api/invoice — validasi orderId wajib diisi (400) dan pencarian via query parameter (AC-1, AC-3)
+    - [x] Perbaiki POST /api/payment/notification — standarkan pesan 500 ke Bahasa Indonesia (AC-1, AC-3, AC-4)
+    - [x] Refactor POST /api/payment — standarkan respons galat menggunakan apiError() (AC-1, AC-3)
+- [x] Verify it: `/check verify error-sanitization`
+- [x] Test it: `/test error-sanitization`
+- [x] Review it (fresh model): `/check review error-sanitization`
+- [x] Document it: `/document error-sanitization`
+Spec [0005](../specs/0005-error-sanitization-env-guard/index.md) · code in `lib/errors.ts`, `lib/env.ts`, and all `app/api/` routes
+
+## Documentation
+
+### 5. Living architecture and security diagrams · done
+Diagram arsitektur sistem dan alur keamanan berbasis Mermaid di docs/architecture/ yang mencakup alur checkout, validasi harga server, alur webhook Midtrans, pembatasan laju Redis, serta petunjuk pembaruan berkala.
+**Done when:** berkas arsitektur berformat Mermaid tersedia di docs/architecture/ yang mendokumentasikan alur data dan proteksi keamanan, serta memuat panduan pembaruan saat kode berubah.
+- [x] Design it (spec): `/architect architecture-and-security-diagrams`
+- [x] Build it: `/develop architecture-and-security-diagrams`
+    - [x] Struktur direktori dan diagram arsitektur global di README.md (AC-1)
+    - [x] Sequence Diagram alur checkout dan validasi harga server (AC-2)
+    - [x] Sequence Diagram alur notifikasi webhook Midtrans dan idempotensi (AC-3)
+    - [x] Flowchart lapisan keamanan dan pembatasan laju Redis (AC-4)
+    - [x] Panduan pemeliharaan hidup dan integrasi AGENTS.md (AC-5, AC-6)
+- [x] Verify it: `/check verify architecture-and-security-diagrams`
+- [x] Test it: `/test architecture-and-security-diagrams`
+- [x] Review it (fresh model): `/check review architecture-and-security-diagrams`
+- [x] Document it: `/document architecture-and-security-diagrams`
+Spec [0004](../specs/0004-architecture-security-diagrams/index.md) · documentation in `docs/architecture/`
 
 ## Deferred
 Di luar cakupan slice penguatan keamanan saat ini, dicatat agar perencanaan tetap transparan.

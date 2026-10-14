@@ -1,20 +1,17 @@
 // app/api/invoice/[orderId]/route.ts
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/errors';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ orderId: string }> }
 ) {
-
     try {
-        const { orderId } = await params
+        const { orderId } = await params;
 
         if (!orderId) {
-            return NextResponse.json(
-                { success: false, message: 'Order ID is required' },
-                { status: 400 }
-            );
+            return apiError('Order ID wajib diisi', 400);
         }
 
         // Ambil invoice dari database
@@ -25,10 +22,7 @@ export async function GET(
         });
 
         if (!invoice) {
-            return NextResponse.json(
-                { success: false, message: 'Invoice not found' },
-                { status: 404 }
-            );
+            return apiError('Invoice tidak ditemukan', 404);
         }
 
         return NextResponse.json({
@@ -43,16 +37,6 @@ export async function GET(
     } catch (error: unknown) {
         console.error('Error fetching invoice:', error);
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-        return NextResponse.json(
-            {
-                success: false,
-                message: 'Failed to fetch invoice',
-                error: errorMessage,
-            },
-            { status: 500 }
-        );
+        return apiError('Gagal mengambil data invoice', 500);
     }
 }
-

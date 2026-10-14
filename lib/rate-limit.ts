@@ -1,4 +1,5 @@
 // lib/rate-limit.ts
+import '@/lib/env';
 import { getRedis } from '@/lib/redis';
 
 /**
@@ -33,7 +34,12 @@ export function getClientIp(req: Request): string {
   return 'unknown';
 }
 
-export async function rateLimit(ip: string, limit = 10, windowMs = 60000): Promise<boolean> {
+export async function rateLimit(
+  ip: string,
+  limit = 10,
+  windowMs = 60000,
+  keyPrefix = 'rate-limit'
+): Promise<boolean> {
   try {
     const client = await getRedis();
     if (!client) {
@@ -42,7 +48,7 @@ export async function rateLimit(ip: string, limit = 10, windowMs = 60000): Promi
       return false;
     }
 
-    const key = `rate-limit:${ip}`;
+    const key = `${keyPrefix}:${ip}`;
     const count = await client.incr(key);
 
     if (count === 1) {

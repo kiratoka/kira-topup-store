@@ -200,7 +200,8 @@ describe("input validation (AC-2)", () => {
   });
 
   it("returns 400 when neither productId nor product.id is provided", async () => {
-    const { productId: _omit, ...bodyWithoutProduct } = validBody;
+    const bodyWithoutProduct = { ...validBody };
+    delete (bodyWithoutProduct as Record<string, unknown>).productId;
     const response = await POST(makeRequest(bodyWithoutProduct));
     const data = await response.json();
 
@@ -283,7 +284,6 @@ describe("server ID requirement (AC-4)", () => {
         productId: "diamond-50",
       })
     );
-    const data = await response.json();
 
     expect(response.status).toBe(400);
     expect(mockCreateTransaction).not.toHaveBeenCalled();
@@ -327,7 +327,6 @@ describe("product not found (AC-3)", () => {
     const response = await POST(
       makeRequest({ ...validBody, productId: "diamond-50" })
     );
-    const data = await response.json();
 
     expect(response.status).toBe(400);
     expect(mockCreateTransaction).not.toHaveBeenCalled();
@@ -412,4 +411,104 @@ describe("canonical price and invoice (AC-1, AC-5)", () => {
     const [[callArg]] = mockCreateTransaction.mock.calls;
     expect(callArg.transaction_details.gross_amount).toBe(75000);
   });
+
+  // ── Error sanitization and standardization (AC-1, AC-3) ───────────────────
+  describe("error sanitization (AC-1, AC-3)", () => {
+    it("returns 400 with Indonesian message without leaking details on malformed JSON", async () => {
+      const req = new Request("http://localhost:3000/api/payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{ malformed: json",
+      });
+
+      const response = await POST(req);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toBe("Payload JSON tidak valid");
+      expect(data.error).toBeUndefined();
+      expect(data.stack).toBeUndefined();
+    });
+
+    it("returns 429 with Indonesian message when rate limit is exceeded", async () => {
+      mockRateLimit.mockResolvedValue(true);
+
+      const response = await POST(makeRequest(validBody));
+      const data = await response.json();
+
+      expect(response.status).toBe(429);
+      expect(data.success).toBe(false);
+      expect(data.message).toBe("Terlalu banyak permintaan. Silakan coba lagi beberapa saat lagi.");
+      expect(data.error).toBeUndefined();
+      expect(mockCreateTransaction).not.toHaveBeenCalled();
+    });
+
+    it("returns 500 with Indonesian message without leaking details on unhandled server error", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { nanoid } = await import("nanoid");
+      vi.mocked(nanoid).mockImplementationOnce(() => {
+        throw new Error("Fatal ID generation crash");
+      });
+
+      const response = await POST(makeRequest(validBody));
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.message).toBe("Terjadi kesalahan internal pada server");
+      expect(data.error).toBeUndefined();
+      expect(data.stack).toBeUndefined();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("returns 400 with sanitized message when gameId does not exist", async () => {
+      const bodyWithUnknownGame = {
+        customer: {
+          ...validBody.customer,
+          gameId: "unknown-game-id",
+        },
+        productId: "crystal-300",
+      };
+
+      const response = await POST(makeRequest(bodyWithUnknownGame));
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toBe('Game dengan ID "unknown-game-id" tidak ditemukan');
+      expect(data.error).toBeUndefined();
+      expect(data.stack).toBeUndefined();
+    });
+
+    it("returns 400 with sanitized message when productId does not exist for the game", async () => {
+      const bodyWithUnknownProduct = {
+        ...validBody,
+        productId: "invalid-product-id",
+      };
+
+      const response = await POST(makeRequest(bodyWithUnknownProduct));
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toContain('Produk dengan ID "invalid-product-id" tidak ditemukan');
+      expect(data.error).toBeUndefined();
+      expect(data.stack).toBeUndefined();
+    });
+
+    it("returns 400 with formatted validation errors without leaking stack", async () => {
+      const response = await POST(makeRequest({}));
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toBe("Data permohonan pembayaran tidak valid");
+      expect(data.errors).toBeDefined();
+      expect(data.error).toBeUndefined();
+      expect(data.stack).toBeUndefined();
+    });
+  });
 });
+

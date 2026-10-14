@@ -6,13 +6,14 @@ import midtransClient from 'midtrans-client';
 import { paymentRequestSchema, formatZodErrors } from "@/lib/validations/payment";
 import { getProductById } from "@/lib/datas/productData";
 import { gamesData } from "@/lib/datas/gameData";
+import { apiError } from "@/lib/errors";
 
 let snapClient: InstanceType<typeof midtransClient.Snap> | null = null;
 
 function getSnapClient() {
     if (!snapClient) {
         snapClient = new midtransClient.Snap({
-            isProduction: false,
+            isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
             serverKey: process.env.MIDTRANS_SERVER_KEY || '',
             clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
         });
@@ -27,10 +28,7 @@ export async function POST(req: Request) {
     // Check rate limit (10 requests per minute)
     const isLimited = await rateLimit(ip, 10, 60 * 1000);
     if (isLimited) {
-        return NextResponse.json(
-            { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi beberapa saat lagi.' },
-            { status: 429 }
-        );
+        return apiError('Terlalu banyak permintaan. Silakan coba lagi beberapa saat lagi.', 429);
     }
 
     try {
@@ -38,22 +36,17 @@ export async function POST(req: Request) {
         try {
             body = await req.json();
         } catch {
-            return NextResponse.json(
-                { success: false, message: 'Payload JSON tidak valid' },
-                { status: 400 }
-            );
+            return apiError('Payload JSON tidak valid', 400);
         }
 
         // Validate incoming payload strictly using Zod schema
         const parseResult = paymentRequestSchema.safeParse(body);
         if (!parseResult.success) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: 'Data permohonan pembayaran tidak valid',
-                    errors: formatZodErrors(parseResult.error)
-                },
-                { status: 400 }
+            return apiError(
+                'Data permohonan pembayaran tidak valid',
+                400,
+                undefined,
+                { errors: formatZodErrors(parseResult.error) }
             );
         }
 
@@ -61,47 +54,33 @@ export async function POST(req: Request) {
         const targetProductId = directProductId || legacyProduct?.id;
 
         if (!targetProductId) {
-            return NextResponse.json(
-                { success: false, message: 'Product ID wajib diisi' },
-                { status: 400 }
-            );
+            return apiError('Product ID wajib diisi', 400);
         }
 
         // Validate game existence with prototype safety
         if (!Object.hasOwn(gamesData, customer.gameId)) {
-            return NextResponse.json(
-                { success: false, message: `Game dengan ID "${customer.gameId}" tidak ditemukan` },
-                { status: 400 }
-            );
+            return apiError(`Game dengan ID "${customer.gameId}" tidak ditemukan`, 400);
         }
 
         const gameInfo = gamesData[customer.gameId];
         if (!gameInfo) {
-            return NextResponse.json(
-                { success: false, message: `Game dengan ID "${customer.gameId}" tidak ditemukan` },
-                { status: 400 }
-            );
+            return apiError(`Game dengan ID "${customer.gameId}" tidak ditemukan`, 400);
         }
 
         // Validate server requirement for games that require a server
         if (gameInfo.requiresServer && (!customer.serverId || customer.serverId.trim() === '')) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: `Server ID wajib diisi untuk game ${gameInfo.name}`,
-                    errors: { "customer.serverId": "Server ID wajib diisi" }
-                },
-                { status: 400 }
+            return apiError(
+                `Server ID wajib diisi untuk game ${gameInfo.name}`,
+                400,
+                undefined,
+                { errors: { "customer.serverId": "Server ID wajib diisi" } }
             );
         }
 
         // Authoritative product lookup from server catalog (ignores any client submitted price)
         const canonicalProduct = getProductById(customer.gameId, targetProductId);
         if (!canonicalProduct) {
-            return NextResponse.json(
-                { success: false, message: `Produk dengan ID "${targetProductId}" tidak ditemukan untuk game ${gameInfo.name}` },
-                { status: 400 }
-            );
+            return apiError(`Produk dengan ID "${targetProductId}" tidak ditemukan untuk game ${gameInfo.name}`, 400);
         }
 
         // Reusable Snap instance in sandbox mode
@@ -169,22 +148,10 @@ export async function POST(req: Request) {
 
         } catch (error) {
             console.error('Midtrans Error:', error);
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: 'Gagal membuat permohonan transaksi pembayaran'
-                },
-                { status: 500 }
-            );
+            return apiError('Gagal membuat permohonan transaksi pembayaran', 500);
         }
     } catch (error) {
         console.error('Server Error:', error);
-        return NextResponse.json(
-            {
-                success: false,
-                message: 'Terjadi kesalahan internal pada server'
-            },
-            { status: 500 }
-        );
+        return apiError('Terjadi kesalahan internal pada server', 500);
     }
 }

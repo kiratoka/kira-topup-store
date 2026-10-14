@@ -26,7 +26,7 @@ This is the main user-facing top-up flow. It lives under `components/TitleGame/`
 
 ## Gotchas
 
-- `isProduction: false` is set in the payment API route. When going live, change it there AND verify the Midtrans client key is the production one.
+- Midtrans mode is driven by the `MIDTRANS_IS_PRODUCTION` env var. When going live, set it to `"true"` in the deployment platform and verify the Midtrans client key is the production one.
 - `gameInfo.requiresServer` controls whether `serverId` is collected. If a game that does not require a server later gets one added in `gameData.ts`, no code changes are needed in the components.
 - The type for AlertDialog props is `TitleGameAlertDialogProps` in `lib/types.ts`. It is large; prefer narrowing it if you add a new dialog rather than expanding the shared interface.
 

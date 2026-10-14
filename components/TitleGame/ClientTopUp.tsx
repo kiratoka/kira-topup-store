@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Shield, CreditCard, Wallet, AlertCircle } from 'lucide-react';
 import { ClientTopUpProps, TopUpProduct } from '@/lib/types';
@@ -9,8 +10,8 @@ import FormTopUp from './FormTopUp';
 
 
 const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
-    // State untuk validasi form dan input data
-    const [isFormValid, setIsFormValid] = useState(false);
+    const router = useRouter();
+    // State untuk input data dan status UI
     const [selectedProduct, setSelectedProduct] = useState<TopUpProduct | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [userId, setUserId] = useState('');
@@ -44,13 +45,9 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
         return { isUserIdValid, isServerValid, isEmailValid, isProductSelected };
     }, [userId, serverId, email, selectedProduct, gameInfo.requiresServer]);
 
-
-    // Fungsi untuk mengupdate status validasi form
-    // Di dalam component ClientTopUp
-    useEffect(() => {
-        const { isUserIdValid, isServerValid, isEmailValid, isProductSelected } = validateForm();
-        setIsFormValid(isUserIdValid && isServerValid && isEmailValid && isProductSelected);
-    }, [validateForm]);
+    // Status validasi form diturunkan langsung dari nilai input saat ini
+    const { isUserIdValid, isServerValid, isEmailValid, isProductSelected } = validateForm();
+    const isFormValid = isUserIdValid && isServerValid && isEmailValid && isProductSelected;
 
     
     // Handler untuk klik tombol pembayaran
@@ -98,12 +95,12 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                     // Tampilkan dialog sukses tanpa mereset form
                     setShowSuccessDialog(true);
                     setIsProcessing(false);
-                    window.location.href = `/invoice/${orderId}`
+                    router.push(`/invoice/${orderId}`);
                 },
                 onPending: (result) => {
                     console.log('Payment pending:', result);
                     setIsProcessing(false);
-                    window.location.href = `/invoice/${orderId}?status=pending`
+                    router.push(`/invoice/${orderId}?status=pending`);
                 },
                 onError: (result) => {
                     console.error('Payment error:', result);
@@ -114,7 +111,7 @@ const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) => {
                 onClose: () => {
                     setIsProcessing(false);
                     console.log('Customer closed the popup without finishing the payment');
-                    window.location.href = `/invoice/${orderId}?status=pending`
+                    router.push(`/invoice/${orderId}?status=pending`);
                 }
             });
         } catch (error) {

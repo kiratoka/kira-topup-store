@@ -91,7 +91,8 @@ describe("paymentCustomerSchema", () => {
 
   // serverId is optional
   it("accepts a customer with no serverId for games that do not require one", () => {
-    const { serverId: _omit, ...withoutServer } = validCustomer;
+    const withoutServer = { ...validCustomer };
+    delete (withoutServer as Record<string, unknown>).serverId;
     const result = paymentCustomerSchema.safeParse(withoutServer);
     expect(result.success).toBe(true);
   });

@@ -117,4 +117,16 @@ describe("rateLimit", () => {
     const isLimited = await rateLimit("203.0.113.1", 10, 60000);
     expect(isLimited).toBe(false);
   });
+
+  it("uses custom keyPrefix when provided (e.g. rate-limit:webhook)", async () => {
+    vi.mocked(getRedis).mockResolvedValue({
+      incr: mockIncr.mockResolvedValue(1),
+      expire: mockExpire.mockResolvedValue(1),
+    } as unknown as Awaited<ReturnType<typeof getRedis>>);
+
+    const isLimited = await rateLimit("203.0.113.1", 30, 60000, "rate-limit:webhook");
+    expect(isLimited).toBe(false);
+    expect(mockIncr).toHaveBeenCalledWith("rate-limit:webhook:203.0.113.1");
+    expect(mockExpire).toHaveBeenCalledWith("rate-limit:webhook:203.0.113.1", 60);
+  });
 });

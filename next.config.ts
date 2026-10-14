@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Izinkan ngrok domain untuk HMR saat development
+  allowedDevOrigins: ['*.ngrok-free.app'],
+
   async headers() {
     return [
       {

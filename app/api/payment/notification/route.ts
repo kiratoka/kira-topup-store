@@ -4,29 +4,44 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import midtransClient from 'midtrans-client';
 import crypto from 'crypto';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { apiError } from '@/lib/errors';
 
 export async function POST(req: Request) {
   console.log(">> POST /api/payment/notification called");
 
-  try {
-    const notification = await req.json();
+  // Fase 1: Rate Limiting (AC-2, AC-5)
+  const ip = getClientIp(req);
+  const isLimited = await rateLimit(ip, 30, 60_000, 'rate-limit:webhook');
+  if (isLimited) {
+    return apiError('Terlalu banyak permintaan', 429);
+  }
 
+  try {
+    let notification: Record<string, unknown>;
+    try {
+      notification = await req.json();
+    } catch {
+      return apiError('Data tidak lengkap', 400);
+    }
 
     const {
       order_id,
       status_code,
       gross_amount,
       signature_key
-    } = notification;
+    } = (notification || {}) as {
+      order_id?: string;
+      status_code?: string;
+      gross_amount?: string;
+      signature_key?: string;
+    };
 
-    if (!order_id || !status_code || !gross_amount || !signature_key) {
-      return NextResponse.json(
-        { success: false, message: 'Data tidak lengkap' },
-        { status: 400 }
-      );
+    if (!order_id || !status_code || !gross_amount || !signature_key || typeof signature_key !== 'string') {
+      return apiError('Data tidak lengkap', 400);
     }
 
-    // Generate signature untuk verifikasi
+    // Fase 2: Verifikasi Signature Timing-Safe (AC-1)
     const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
     const stringToSign = `${order_id}${status_code}${gross_amount}${serverKey}`;
     const expectedSignature = crypto
@@ -34,61 +49,112 @@ export async function POST(req: Request) {
       .update(stringToSign)
       .digest('hex');
 
-    // Check signature
-    if (signature_key !== expectedSignature) {
+    const sigBuffer = Buffer.from(signature_key);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    // crypto.timingSafeEqual throws TypeError if buffer lengths do not match
+    const isSignatureValid =
+      sigBuffer.length === expectedBuffer.length &&
+      crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+
+    if (!isSignatureValid) {
       console.error('Invalid Midtrans signature!');
-      return NextResponse.json(
-        { success: false, message: 'Signature tidak valid' },
-        { status: 403 }
-      );
+      return apiError('Signature tidak valid', 403);
     }
 
+    // Fase 3: Idempotency Check & Order Existence (AC-3, AC-4, AC-6)
+    const existingInvoice = await prisma.invoice.findUnique({
+      where: { orderId: order_id },
+    });
+
+    if (!existingInvoice) {
+      console.warn(`[Webhook Warning] Order ID "${order_id}" tidak ditemukan di database`);
+      return apiError('Order tidak ditemukan', 404);
+    }
+
+    if (existingInvoice.status === 'success' || existingInvoice.status === 'failed') {
+      const incomingStatus = (notification as { transaction_status?: string })?.transaction_status || 'unknown';
+      console.warn(
+        `[Webhook Warning] Notifikasi diabaikan untuk order ${order_id}: invoice sudah berstatus akhir "${existingInvoice.status}", incoming: "${incomingStatus}"`
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    // Fase 4: Konfirmasi Status Kanonikal ke Midtrans SDK
+    const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
     const apiClient = new midtransClient.Snap({
-      isProduction: false,
+      isProduction,
       serverKey: process.env.MIDTRANS_SERVER_KEY,
     });
 
     const statusResponse = await apiClient.transaction.notification(notification);
 
     const {
-      order_id: orderId,
       transaction_status: transactionStatus,
       fraud_status: fraudStatus,
       transaction_id: transactionId,
-      payment_type: paymentType
-    } = statusResponse;
+      payment_type: paymentType,
+      transaction_time: transactionTime,
+    } = (statusResponse || {}) as {
+      order_id?: string;
+      transaction_status?: string;
+      fraud_status?: string;
+      transaction_id?: string;
+      payment_type?: string;
+      transaction_time?: string;
+    };
 
     let invoiceStatus = 'pending';
     if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
       invoiceStatus = fraudStatus === 'challenge' ? 'pending' : 'success';
-    } else if (['cancel', 'deny', 'expire'].includes(transactionStatus)) {
+    } else if (['cancel', 'deny', 'expire'].includes(transactionStatus || '')) {
       invoiceStatus = 'failed';
     }
 
-    await prisma.invoice.update({
-      where: { orderId },
+    if (!transactionTime) {
+      console.warn(
+        `[Webhook Warning] transaction_time tidak ada untuk order ${order_id}, status: ${invoiceStatus} - paymentTime diisi dengan waktu server.`
+      );
+    }
+    const paymentDate = transactionTime ? new Date(transactionTime) : new Date();
+
+    // Fase 5: Pembaruan Status Invoice di Database (Atomic Conditional Update / Optimistic Locking)
+    // Untuk mencegah race condition pada webhook konkuren (misalnya retry paralel dari Midtrans),
+    // pembaruan menggunakan `updateMany` dengan kondisi `status NOT IN ('success', 'failed')`.
+    // PostgreSQL mengeksekusi conditional update ini secara atomik dengan row-level lock.
+    // Jika dua notifikasi paralel tiba saat status masih 'pending', hanya satu transaksi yang dapat
+    // memfinalisasi status. Transaksi kedua yang tiba setelahnya akan menghasilkan count: 0,
+    // mencegah overwriting status final dan melindungi dari webhook delayed/out-of-order.
+    const updateResult = await prisma.invoice.updateMany({
+      where: {
+        orderId: order_id,
+        status: { notIn: ['success', 'failed'] },
+      },
       data: {
         status: invoiceStatus,
         paymentMethod: paymentType,
         transactionId,
-        paymentTime: new Date(),
+        paymentTime: paymentDate,
       },
     });
 
-    console.log(`Updated invoice ${orderId} with status: ${invoiceStatus}`);
+    if (updateResult.count === 0) {
+      // Race condition tertangani: invoice telah difinalisasi oleh pemrosesan webhook paralel lain
+      const latestInvoice = await prisma.invoice.findUnique({
+        where: { orderId: order_id },
+      });
+      console.warn(
+        `[Webhook Warning] Update diabaikan untuk order ${order_id}: invoice sudah berstatus akhir "${latestInvoice?.status || 'unknown'}" oleh proses konkuren`
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    console.log(`Updated invoice ${order_id} with status: ${invoiceStatus}`);
     return NextResponse.json({ success: true });
 
   } catch (error: unknown) {
     console.error("Notification Error:", error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to process notification',
-        error: errorMessage,
-      },
-      { status: 500 }
-    );
+    return apiError('Gagal memproses notifikasi', 500);
   }
 }

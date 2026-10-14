@@ -16,6 +16,7 @@ const Invoice = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -29,6 +30,8 @@ const Invoice = () => {
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchInvoice = async () => {
             try {
                 // Ambil data invoice dari API kita sendiri
@@ -39,19 +42,29 @@ const Invoice = () => {
                     throw new Error(data.message || 'Invoice tidak ditemukan');
                 }
 
-                setInvoiceData(data.invoice);
+                if (isMounted) {
+                    setInvoiceData(data.invoice);
+                }
             } catch (err) {
                 console.error('Error fetching invoice:', err);
-                setError(getErrorMessage(err) || 'Terjadi kesalahan saat mengambil data invoice');
+                if (isMounted) {
+                    setError(getErrorMessage(err) || 'Terjadi kesalahan saat mengambil data invoice');
+                }
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         if (orderId) {
             fetchInvoice();
         }
-    }, [orderId]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [orderId, refreshKey]);
 
     const handlePayNow = () => {
         if (!invoiceData?.token) {
@@ -65,15 +78,17 @@ const Invoice = () => {
             window.snap.pay(invoiceData.token, {
                 onSuccess: function (result: SnapResponse) {
                     console.log('Payment success:', result);
-                    window.location.href = `/invoice/${orderId}`;
+                    router.push(`/invoice/${orderId}`);
+                    setRefreshKey(k => k + 1);
                 },
                 onPending: function (result: SnapResponse) {
                     console.log('Payment pending:', result);
-                    window.location.href = `/invoice/${orderId}?status=error`;
+                    router.push(`/invoice/${orderId}?status=pending`);
+                    setRefreshKey(k => k + 1);
                 },
                 onError: function (result: SnapResponse) {
                     console.log('Payment error:', result);
-                    window.location.href = `/invoice/${orderId}?status=pending`;
+                    router.push(`/invoice/${orderId}?status=error`);
                 },
                 onClose: function () {
 
