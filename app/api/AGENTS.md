@@ -12,20 +12,20 @@ Handles payment creation and Midtrans webhook notifications. Two routes live her
 | `app/api/payment/notification/route.ts` | `POST /api/payment/notification` — Midtrans webhook; verifies signature, updates Invoice status |
 | `app/api/invoice/[orderId]/route.ts` | `GET /api/invoice/[orderId]` — retrieves invoice details, sanitized error handling |
 | `app/api/invoice/route.ts` | `GET /api/invoice` — query invoice by orderId parameter with validation |
-| `lib/errors.ts` | `apiError` helper for standardized API error responses |
+| `lib/security/errors.ts` | `apiError` helper for standardized API error responses |
 | `lib/env.ts` | Zod schema validation for mandatory environment variables at startup |
-| `lib/rate-limit.ts` | Sliding window rate limiter backed by Redis Cloud, with trusted IP extraction |
-| `lib/redis.ts` | Redis Cloud TCP singleton client with fallback error handling |
-| `lib/validations/payment.ts` | Strict Zod validation schemas (`paymentRequestSchema`) and error formatters |
-| `lib/prisma.ts` | Prisma client singleton |
-| `lib/types.ts` | `PaymentRequest`, `InvoiceData`, `SnapResponse`, `CustomerDetails`, `ProductDetails` |
+| `lib/cache/rate-limit.ts` | Sliding window rate limiter backed by Redis Cloud, with trusted IP extraction |
+| `lib/cache/redis.ts` | Redis Cloud TCP singleton client with fallback error handling |
+| `lib/payment/validations/payment.ts` | Strict Zod validation schemas (`paymentRequestSchema`) and error formatters |
+| `lib/db/prisma.ts` | Prisma client singleton |
+| `lib/types/payment.ts` | `PaymentRequest`, `InvoiceData`, `SnapResponse`, `CustomerDetails`, `ProductDetails` |
 | `prisma/schema.prisma` | DB schema: `Invoice`, `Game`, `Product` models |
 
 ## Conventions
 
-- Every `POST` route calls `rateLimit` at the top before any business logic (`POST /api/payment` uses 10 req/min with default prefix; `POST /api/payment/notification` uses 30 req/min with `rate-limit:webhook` key prefix). The IP is resolved using `getClientIp(req)` from `lib/rate-limit.ts`, which prioritizes trusted reverse proxy headers (`x-real-ip`, `cf-connecting-ip`) over `x-forwarded-for` to prevent IP spoofing.
-- Pricing and item details in `POST /api/payment` are resolved authoritatively from `lib/datas/productData.ts` (`getProductById`); client-submitted prices are ignored.
-- Incoming request payloads to `POST /api/payment` are strictly parsed and validated using Zod (`paymentRequestSchema` from `lib/validations/payment.ts`) before creating transactions or DB records.
+- Every `POST` route calls `rateLimit` at the top before any business logic (`POST /api/payment` uses 10 req/min with default prefix; `POST /api/payment/notification` uses 30 req/min with `rate-limit:webhook` key prefix). The IP is resolved using `getClientIp(req)` from `lib/cache/rate-limit.ts`, which prioritizes trusted reverse proxy headers (`x-real-ip`, `cf-connecting-ip`) over `x-forwarded-for` to prevent IP spoofing.
+- Pricing and item details in `POST /api/payment` are resolved authoritatively from `lib/content/datas/productData.ts` (`getProductById`); client-submitted prices are ignored.
+- Incoming request payloads to `POST /api/payment` are strictly parsed and validated using Zod (`paymentRequestSchema` from `lib/payment/validations/payment.ts`) before creating transactions or DB records.
 - Midtrans mode is controlled by the `MIDTRANS_IS_PRODUCTION` env var (string `"true"` = production, anything else = sandbox). Set this in your deployment platform (Vercel, Railway, etc.), never hardcode it. Both routes read this same var so they stay in sync.
 - Webhook signature verification: `SHA-512(orderId + statusCode + grossAmount + serverKey)` must match the `signature_key` in the request body using constant-time comparison (`crypto.timingSafeEqual`). Reject with `403` on mismatch.
 - Webhook idempotency and existence: check invoice in DB first. If order does not exist, reject with `404`. If invoice status is already terminal (`success` or `failed`), return `200 { success: true }` immediately without reprocessing.
@@ -34,7 +34,7 @@ Handles payment creation and Midtrans webhook notifications. Two routes live her
 - Invoice status mapping: `capture` or `settlement` → `success` (unless fraud challenge → `pending`); `cancel`, `deny`, `expire` → `failed`; all else → `pending`.
 - Customer info stored as `Json` in DB. Access via `invoice.customer` which matches `CustomerDetails`.
 - Game custom data passed to Midtrans via `custom_field1` (gameId), `custom_field2` (serverId), `custom_field3` (userId).
-- Error sanitization: All API routes return standardized error responses using the `apiError(message, status, code?, extra?)` helper from `lib/errors.ts` (`{ success: false, message, ... }`) in Indonesian without leaking internal error details, stack traces, or raw exception messages.
+- Error sanitization: All API routes return standardized error responses using the `apiError(message, status, code?, extra?)` helper from `lib/security/errors.ts` (`{ success: false, message, ... }`) in Indonesian without leaking internal error details, stack traces, or raw exception messages.
 - Environment guard: Mandatory environment variables are validated at startup via `lib/env.ts` (`envSchema.safeParse`), failing fast if any required variables are missing.
 
 ## Gotchas

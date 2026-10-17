@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { TopUpProduct } from '@/lib/types';
+import type { TopUpProduct } from '@/lib/types/game';
 import ProductCard from './ProductCard';
 
 interface ProductSelectionSectionProps {

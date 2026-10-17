@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
-import { GameInfo } from '@/lib/types';
+import type { GameInfo } from '@/lib/types/game';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface AccountInfoSectionProps {

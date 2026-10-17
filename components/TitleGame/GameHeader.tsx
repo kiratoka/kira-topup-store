@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { GameInfo } from '@/lib/types';
+import type { GameInfo } from '@/lib/types/game';
 
 interface GameHeaderProps {
   gameInfo: GameInfo;

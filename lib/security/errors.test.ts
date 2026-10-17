@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { apiError } from './errors';
 
-describe('lib/errors - apiError helper', () => {
+describe('lib/security/errors - apiError helper', () => {
   it('returns response with success: false and message and correct HTTP status', async () => {
     const res = apiError('Terjadi kesalahan', 400);
     const data = await res.json();
@@ -162,5 +162,3 @@ describe('lib/errors - apiError helper', () => {
     });
   });
 });
-
-

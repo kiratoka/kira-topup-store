@@ -12,6 +12,7 @@ export default defineConfig({
       REDIS_URL: "redis://localhost:6379",
       NEXT_PUBLIC_MIDTRANS_CLIENT_KEY: "test-client-key",
       NEXT_PUBLIC_BASE_URL: "http://localhost:3000",
+      NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION: "false",
     },
   },
   resolve: {

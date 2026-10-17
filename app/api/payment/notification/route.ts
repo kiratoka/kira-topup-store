@@ -1,14 +1,15 @@
 // app/api/payment/notification/route.ts
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import midtransClient from 'midtrans-client';
 import crypto from 'crypto';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { apiError } from '@/lib/errors';
+import { rateLimit, getClientIp } from '@/lib/cache/rate-limit';
+import { apiError } from '@/lib/security/errors';
+import { webhookLogger } from '@/lib/logging/logger';
 
 export async function POST(req: Request) {
-  console.log(">> POST /api/payment/notification called");
+  webhookLogger.info(">> POST /api/payment/notification called");
 
   // Fase 1: Rate Limiting (AC-2, AC-5)
   const ip = getClientIp(req);
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
       crypto.timingSafeEqual(sigBuffer, expectedBuffer);
 
     if (!isSignatureValid) {
-      console.error('Invalid Midtrans signature!');
+      webhookLogger.error('Invalid Midtrans signature!');
       return apiError('Signature tidak valid', 403);
     }
 
@@ -68,13 +69,13 @@ export async function POST(req: Request) {
     });
 
     if (!existingInvoice) {
-      console.warn(`[Webhook Warning] Order ID "${order_id}" tidak ditemukan di database`);
+      webhookLogger.warn(`[Webhook Warning] Order ID "${order_id}" tidak ditemukan di database`);
       return apiError('Order tidak ditemukan', 404);
     }
 
     if (existingInvoice.status === 'success' || existingInvoice.status === 'failed') {
       const incomingStatus = (notification as { transaction_status?: string })?.transaction_status || 'unknown';
-      console.warn(
+      webhookLogger.warn(
         `[Webhook Warning] Notifikasi diabaikan untuk order ${order_id}: invoice sudah berstatus akhir "${existingInvoice.status}", incoming: "${incomingStatus}"`
       );
       return NextResponse.json({ success: true });
@@ -112,7 +113,7 @@ export async function POST(req: Request) {
     }
 
     if (!transactionTime) {
-      console.warn(
+      webhookLogger.warn(
         `[Webhook Warning] transaction_time tidak ada untuk order ${order_id}, status: ${invoiceStatus} - paymentTime diisi dengan waktu server.`
       );
     }
@@ -143,17 +144,17 @@ export async function POST(req: Request) {
       const latestInvoice = await prisma.invoice.findUnique({
         where: { orderId: order_id },
       });
-      console.warn(
+      webhookLogger.warn(
         `[Webhook Warning] Update diabaikan untuk order ${order_id}: invoice sudah berstatus akhir "${latestInvoice?.status || 'unknown'}" oleh proses konkuren`
       );
       return NextResponse.json({ success: true });
     }
 
-    console.log(`Updated invoice ${order_id} with status: ${invoiceStatus}`);
+    webhookLogger.info(`Updated invoice ${order_id} with status: ${invoiceStatus}`);
     return NextResponse.json({ success: true });
 
   } catch (error: unknown) {
-    console.error("Notification Error:", error);
+    webhookLogger.error({ err: error }, "Notification Error:");
 
     return apiError('Gagal memproses notifikasi', 500);
   }

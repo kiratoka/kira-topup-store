@@ -1,13 +1,22 @@
 // app/api/invoice/[orderId]/route.ts
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import { NextResponse } from 'next/server';
-import { apiError } from '@/lib/errors';
+import { apiError } from '@/lib/security/errors';
+import { rateLimit, getClientIp } from '@/lib/cache/rate-limit';
+import { sanitizeInvoice } from '@/lib/security/masking';
+import { invoiceLogger } from '@/lib/logging/logger';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ orderId: string }> }
 ) {
     try {
+        const ip = getClientIp(request);
+        const isLimited = await rateLimit(ip, 30, 60_000, 'rate-limit:invoice');
+        if (isLimited) {
+            return apiError('Terlalu banyak permintaan, silakan coba beberapa saat lagi', 429);
+        }
+
         const { orderId } = await params;
 
         if (!orderId) {
@@ -25,17 +34,19 @@ export async function GET(
             return apiError('Invoice tidak ditemukan', 404);
         }
 
+        const formattedInvoice = {
+            ...invoice,
+            createdAt: invoice.createdAt.toISOString(),
+            updatedAt: invoice.updatedAt.toISOString(),
+            paymentTime: invoice.paymentTime ? invoice.paymentTime.toISOString() : null,
+        };
+
         return NextResponse.json({
             success: true,
-            invoice: {
-                ...invoice,
-                createdAt: invoice.createdAt.toISOString(),
-                updatedAt: invoice.updatedAt.toISOString(),
-                paymentTime: invoice.paymentTime ? invoice.paymentTime.toISOString() : null,
-            },
+            invoice: sanitizeInvoice(formattedInvoice),
         });
     } catch (error: unknown) {
-        console.error('Error fetching invoice:', error);
+        invoiceLogger.error({ err: error }, 'Error fetching invoice');
 
         return apiError('Gagal mengambil data invoice', 500);
     }

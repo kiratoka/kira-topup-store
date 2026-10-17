@@ -132,19 +132,19 @@ describe('lib/env - environment variable validation (AC-5, AC-6)', () => {
   });
 
   describe('startup fail-fast guard imports (AC-7)', () => {
-    it('ensures lib/prisma.ts imports lib/env for fail-fast startup validation', async () => {
+    it('ensures lib/db/prisma.ts imports lib/env for fail-fast startup validation', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const prismaFilePath = path.resolve(process.cwd(), 'lib/prisma.ts');
+      const prismaFilePath = path.resolve(process.cwd(), 'lib/db/prisma.ts');
       const content = fs.readFileSync(prismaFilePath, 'utf-8');
 
       expect(content).toMatch(/import\s+['"]@\/lib\/env['"]/);
     });
 
-    it('ensures lib/rate-limit.ts imports lib/env for fail-fast startup validation', async () => {
+    it('ensures lib/cache/rate-limit.ts imports lib/env for fail-fast startup validation', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const rateLimitFilePath = path.resolve(process.cwd(), 'lib/rate-limit.ts');
+      const rateLimitFilePath = path.resolve(process.cwd(), 'lib/cache/rate-limit.ts');
       const content = fs.readFileSync(rateLimitFilePath, 'utf-8');
 
       expect(content).toMatch(/import\s+['"]@\/lib\/env['"]/);

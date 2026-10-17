@@ -1,5 +1,5 @@
-// lib/redis.ts
 import { createClient, RedisClientType } from 'redis';
+import { redisLogger } from '@/lib/logging/logger';
 
 const globalForRedis = global as unknown as {
   redisClient?: RedisClientType;
@@ -13,7 +13,7 @@ export const redis =
   });
 
 redis.on('error', (err) => {
-  console.error('[Redis Client Error]', err);
+  redisLogger.error({ err }, '[Redis Client Error]');
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -32,7 +32,7 @@ export async function getRedis(): Promise<RedisClientType | null> {
     }
     return redis;
   } catch (error) {
-    console.error('[Redis Connection Error]', error);
+    redisLogger.error({ err: error }, '[Redis Connection Error]');
     return null;
   }
 }

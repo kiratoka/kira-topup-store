@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { TopUpProduct } from '@/lib/types';
+import type { TopUpProduct } from '@/lib/types/game';
 
 interface ProductCardProps {
   product: TopUpProduct;

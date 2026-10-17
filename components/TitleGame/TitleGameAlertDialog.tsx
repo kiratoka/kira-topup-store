@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { TitleGameAlertDialogProps } from '@/lib/types';
+import type { TitleGameAlertDialogProps } from '@/lib/types/ui';
 
 export const TitleGameAlertDialog = ({
   showError,

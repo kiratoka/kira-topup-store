@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Wallet, Loader2 } from 'lucide-react';
-import { TopUpProduct } from '@/lib/types';
+import type { TopUpProduct } from '@/lib/types/game';
 
 interface StickyCheckoutBarProps {
   selectedProduct: TopUpProduct | null;

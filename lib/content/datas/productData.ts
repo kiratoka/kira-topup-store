@@ -1,4 +1,4 @@
-import { TopUpProduct } from "../types";
+import type { TopUpProduct } from '@/lib/types/game';
 
 export const productsData: Record<string, TopUpProduct[]> = {
   "genshin-impact": [

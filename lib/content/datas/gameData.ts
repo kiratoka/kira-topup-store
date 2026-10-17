@@ -1,4 +1,4 @@
-import { GameInfo } from "../types";
+import type { GameInfo } from '@/lib/types/game';
 
 export const games = [
   {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { productsData, getProductById } from "./productData";
 
-// covers: AC-1 (server resolves canonical price from lib/datas/productData.ts)
+// covers: AC-1 (server resolves canonical price from lib/content/datas/productData.ts)
 // covers: AC-3 (invalid product → undefined, causes 400 in route)
 
 describe("productsData", () => {

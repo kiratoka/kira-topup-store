@@ -1,4 +1,4 @@
-import { SnapResponse } from "@/lib/types";
+import type { SnapResponse } from "@/lib/types/payment";
 
 // types/snap.d.ts
 declare namespace MidtransSnap {

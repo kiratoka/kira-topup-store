@@ -1,6 +1,6 @@
 import React from 'react';
-import { InvoiceData } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
+import type { InvoiceData } from '@/lib/types/payment';
+import { formatCurrency } from '@/lib/utils/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 

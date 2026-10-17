@@ -1,15 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getClientIp, rateLimit } from "./rate-limit";
+import { getClientIp, rateLimit, RATE_LIMIT_LUA_SCRIPT } from "./rate-limit";
 
-// Mock @/lib/redis
-const mockIncr = vi.fn();
-const mockExpire = vi.fn();
+// Mock @/lib/cache/redis
+const mockEval = vi.fn();
 
-vi.mock("@/lib/redis", () => ({
+vi.mock("@/lib/cache/redis", () => ({
   getRedis: vi.fn(),
 }));
 
-import { getRedis } from "@/lib/redis";
+import { getRedis } from "@/lib/cache/redis";
 
 describe("getClientIp", () => {
   it("extracts IP from x-real-ip when present", () => {
@@ -82,26 +81,41 @@ describe("rateLimit", () => {
   });
 
   it("allows request when rate limit is not exceeded", async () => {
+    mockEval.mockResolvedValue(1);
     vi.mocked(getRedis).mockResolvedValue({
-      incr: mockIncr.mockResolvedValue(1),
-      expire: mockExpire.mockResolvedValue(1),
+      eval: mockEval,
     } as unknown as Awaited<ReturnType<typeof getRedis>>);
 
     const isLimited = await rateLimit("203.0.113.1", 10, 60000);
     expect(isLimited).toBe(false);
-    expect(mockIncr).toHaveBeenCalledWith("rate-limit:203.0.113.1");
-    expect(mockExpire).toHaveBeenCalledWith("rate-limit:203.0.113.1", 60);
+    expect(mockEval).toHaveBeenCalledWith(RATE_LIMIT_LUA_SCRIPT, {
+      keys: ["rate-limit:203.0.113.1"],
+      arguments: ["60"],
+    });
   });
 
   it("blocks request when count exceeds limit", async () => {
+    mockEval.mockResolvedValue(11);
     vi.mocked(getRedis).mockResolvedValue({
-      incr: mockIncr.mockResolvedValue(11),
-      expire: mockExpire,
+      eval: mockEval,
     } as unknown as Awaited<ReturnType<typeof getRedis>>);
 
     const isLimited = await rateLimit("203.0.113.1", 10, 60000);
     expect(isLimited).toBe(true);
-    expect(mockExpire).not.toHaveBeenCalled();
+    expect(mockEval).toHaveBeenCalledWith(RATE_LIMIT_LUA_SCRIPT, {
+      keys: ["rate-limit:203.0.113.1"],
+      arguments: ["60"],
+    });
+  });
+
+  it("allows request when count equals limit", async () => {
+    mockEval.mockResolvedValue(10);
+    vi.mocked(getRedis).mockResolvedValue({
+      eval: mockEval,
+    } as unknown as Awaited<ReturnType<typeof getRedis>>);
+
+    const isLimited = await rateLimit("203.0.113.1", 10, 60000);
+    expect(isLimited).toBe(false);
   });
 
   it("fails open (returns false) when Redis client is null", async () => {
@@ -109,6 +123,7 @@ describe("rateLimit", () => {
 
     const isLimited = await rateLimit("203.0.113.1", 10, 60000);
     expect(isLimited).toBe(false);
+    expect(mockEval).not.toHaveBeenCalled();
   });
 
   it("fails open (returns false) when Redis throws an error", async () => {
@@ -119,14 +134,45 @@ describe("rateLimit", () => {
   });
 
   it("uses custom keyPrefix when provided (e.g. rate-limit:webhook)", async () => {
+    mockEval.mockResolvedValue(1);
     vi.mocked(getRedis).mockResolvedValue({
-      incr: mockIncr.mockResolvedValue(1),
-      expire: mockExpire.mockResolvedValue(1),
+      eval: mockEval,
     } as unknown as Awaited<ReturnType<typeof getRedis>>);
 
     const isLimited = await rateLimit("203.0.113.1", 30, 60000, "rate-limit:webhook");
     expect(isLimited).toBe(false);
-    expect(mockIncr).toHaveBeenCalledWith("rate-limit:webhook:203.0.113.1");
-    expect(mockExpire).toHaveBeenCalledWith("rate-limit:webhook:203.0.113.1", 60);
+    expect(mockEval).toHaveBeenCalledWith(RATE_LIMIT_LUA_SCRIPT, {
+      keys: ["rate-limit:webhook:203.0.113.1"],
+      arguments: ["60"],
+    });
+  });
+
+  it("calculates TTL seconds correctly with Math.ceil and minimum 1 second", async () => {
+    mockEval.mockResolvedValue(1);
+    vi.mocked(getRedis).mockResolvedValue({
+      eval: mockEval,
+    } as unknown as Awaited<ReturnType<typeof getRedis>>);
+
+    // 500ms should ceil to 1 second
+    await rateLimit("203.0.113.1", 10, 500);
+    expect(mockEval).toHaveBeenCalledWith(RATE_LIMIT_LUA_SCRIPT, {
+      keys: ["rate-limit:203.0.113.1"],
+      arguments: ["1"],
+    });
+
+    // 65400ms should ceil to 66 seconds
+    await rateLimit("203.0.113.1", 10, 65400);
+    expect(mockEval).toHaveBeenCalledWith(RATE_LIMIT_LUA_SCRIPT, {
+      keys: ["rate-limit:203.0.113.1"],
+      arguments: ["66"],
+    });
+  });
+
+  it("contains atomic INCR and conditional EXPIRE with self-healing in Lua script", () => {
+    expect(RATE_LIMIT_LUA_SCRIPT).toContain("redis.call('INCR', KEYS[1])");
+    expect(RATE_LIMIT_LUA_SCRIPT).toContain("if current == 1 then");
+    expect(RATE_LIMIT_LUA_SCRIPT).toContain("redis.call('EXPIRE', KEYS[1], ARGV[1])");
+    expect(RATE_LIMIT_LUA_SCRIPT).toContain("redis.call('TTL', KEYS[1]) == -1");
+    expect(RATE_LIMIT_LUA_SCRIPT).toContain("return current");
   });
 });

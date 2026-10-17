@@ -41,7 +41,7 @@ vi.mock("midtrans-client", () => {
   };
 });
 
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     invoice: {
       create: mockPrismaCreate,
@@ -49,8 +49,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/rate-limit", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+vi.mock("@/lib/cache/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/cache/rate-limit")>();
   return {
     ...actual,
     rateLimit: mockRateLimit,

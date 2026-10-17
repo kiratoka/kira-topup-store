@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { GameInfo, TopUpProduct } from '@/lib/types';
+import type { GameInfo, TopUpProduct } from '@/lib/types/game';
 import AccountInfoSection from './AccountInfoSection';
 import ProductSelectionSection from './ProductSelectionSection';
 

@@ -127,14 +127,14 @@ Buka window baru jika pekerjaan berikutnya membutuhkan **fokus penuh model tanpa
 
 - Use the Next.js App Router exclusively. No Pages Router.
 - Prefer Server Components for data fetching; use Client Components only when interactivity is needed.
-- All write API routes (`POST`) must apply the `rateLimit` helper from `lib/rate-limit.ts` before any business logic.
+- All write API routes (`POST`) must apply the `rateLimit` helper from `lib/cache/rate-limit.ts` before any business logic.
 - Midtrans webhook signature must be verified via SHA-512 hash using timing-safe comparison before processing (see `app/api/payment/notification/route.ts`).
-- Shared types live in `lib/types.ts`. Game and product data live in `lib/datas/`. Never duplicate type definitions.
+- Shared types are organized by domain: game types in `lib/types/game.ts`, payment types in `lib/types/payment.ts`, blog types in `lib/types/blog.ts`, UI types in `lib/types/ui.ts`. Never duplicate type definitions.
 - Use `nanoid` for unique IDs (already a dependency). Do not use `Math.random()` or `Date.now()` for IDs.
-- Prisma client is a singleton exported from `lib/prisma.ts`. Never instantiate it directly in routes.
+- Prisma client is a singleton exported from `lib/db/prisma.ts`. Never instantiate it directly in routes.
 - UI components come from `components/ui/` (shadcn wrappers). Add new shadcn components there; do not build from scratch.
 - Midtrans mode is driven by `MIDTRANS_IS_PRODUCTION` env var (string `"true"` = production). Set this in your deployment platform. Never hardcode it.
-- All public API error responses must use the `apiError` helper from `lib/errors.ts`; never leak internal error details or raw exception messages.
+- All public API error responses must use the `apiError` helper from `lib/security/errors.ts`; never leak internal error details or raw exception messages.
 
 ## Agent skills
 

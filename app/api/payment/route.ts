@@ -1,12 +1,13 @@
 import { nanoid } from "nanoid";
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { prisma } from '@/lib/db/prisma';
+import { rateLimit, getClientIp } from "@/lib/cache/rate-limit";
 import midtransClient from 'midtrans-client';
-import { paymentRequestSchema, formatZodErrors } from "@/lib/validations/payment";
-import { getProductById } from "@/lib/datas/productData";
-import { gamesData } from "@/lib/datas/gameData";
-import { apiError } from "@/lib/errors";
+import { paymentRequestSchema, formatZodErrors } from "@/lib/payment/validations/payment";
+import { getProductById } from "@/lib/content/datas/productData";
+import { gamesData } from "@/lib/content/datas/gameData";
+import { apiError } from "@/lib/security/errors";
+import { paymentLogger } from "@/lib/logging/logger";
 
 let snapClient: InstanceType<typeof midtransClient.Snap> | null = null;
 
@@ -147,11 +148,11 @@ export async function POST(req: Request) {
             });
 
         } catch (error) {
-            console.error('Midtrans Error:', error);
+            paymentLogger.error({ err: error }, 'Midtrans Error');
             return apiError('Gagal membuat permohonan transaksi pembayaran', 500);
         }
     } catch (error) {
-        console.error('Server Error:', error);
+        paymentLogger.error({ err: error }, 'Server Error');
         return apiError('Terjadi kesalahan internal pada server', 500);
     }
 }

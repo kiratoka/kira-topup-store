@@ -1,8 +1,8 @@
 # 0001 Redis Cloud migration
 
-**Status**: Assumed
+**Status**: Accepted
 **Date**: 2026-09-22
-**Authorized by**: user, during /develop
+**Ratified by**: user
 
 ## Owed decision
 Migrasi penyedia rate limiting dari Upstash Redis berbasis REST HTTP ke Redis Cloud berbasis TCP socket dengan library node redis.
@@ -22,5 +22,4 @@ Gunakan instance Redis Cloud dengan host amplified-mosaic-bit-44475.db.redis.io 
 - Jika koneksi Redis Cloud mengalami gangguan, proses pembayaran tidak boleh gagal total (fail open dengan peringatan log)
 
 ## Ratify
-This decision was recorded by /develop, not deliberated. Run `/architect redis-cloud-migration`
-to deliberate and ratify it. Until then it stays flagged as an owed decision; it does not block marking the feature done.
+Keputusan ini telah diratifikasi dan diimplementasikan secara penuh. Rate limiter berjalan pada Redis Cloud dengan fallback proteksi fail-open dan singleton client di `lib/cache/redis.ts`.

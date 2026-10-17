@@ -1,5 +1,5 @@
 import { MDXRemote } from 'next-mdx-remote/rsc';
-import { getPostBySlug, getAllPosts } from '@/lib/mdx';
+import { getPostBySlug, getAllPosts } from '@/lib/content/mdx';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import Link from 'next/link';

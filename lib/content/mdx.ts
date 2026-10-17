@@ -2,24 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import readingTime from 'reading-time';
+import type { PostFrontMatter, Post } from '@/lib/types/blog';
+
+export type { PostFrontMatter, Post };
 
 const rootDirectory = path.join(process.cwd(), 'content');
-
-export type PostFrontMatter = {
-  title: string;
-  date: string;
-  excerpt: string;
-  author: string;
-  tags?: string[];
-  coverImage: string;
-  readingTime: string;
-}
-
-export type Post = {
-  slug: string;
-  frontMatter: PostFrontMatter;
-  content?: string;
-}
 
 export async function getPostBySlug(slug: string): Promise<Post & { content: string }> {
   const fullPath = path.join(rootDirectory, 'blog', `${slug}.mdx`);

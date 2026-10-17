@@ -40,7 +40,7 @@ vi.mock("midtrans-client", () => {
   };
 });
 
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     invoice: {
       findUnique: mockPrismaFindUnique,
@@ -50,8 +50,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/rate-limit", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+vi.mock("@/lib/cache/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/cache/rate-limit")>();
   return {
     ...actual,
     rateLimit: mockRateLimit,
@@ -60,6 +60,7 @@ vi.mock("@/lib/rate-limit", async (importOriginal) => {
 
 // ── Import route handler ─────────────────────────────────────────────────────
 import { POST } from "./route";
+import { webhookLogger } from "@/lib/logging/logger";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const TEST_SERVER_KEY = "test-server-key-12345";
@@ -213,7 +214,7 @@ describe("POST /api/payment/notification", () => {
   // ── AC-4: Order not found ──────────────────────────────────────────────────
   describe("order not found (AC-4)", () => {
     it("returns 404 and logs console.warn when order_id is not in database", async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(webhookLogger, "warn").mockImplementation(() => {});
       mockPrismaFindUnique.mockResolvedValue(null);
 
       const response = await POST(makeRequest(validPayload));
@@ -232,7 +233,7 @@ describe("POST /api/payment/notification", () => {
   // ── AC-3 & AC-6: Idempotency check ─────────────────────────────────────────
   describe("idempotency check (AC-3, AC-6)", () => {
     it("returns 200, logs console.warn, and skips update when invoice status is 'success'", async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(webhookLogger, "warn").mockImplementation(() => {});
       mockPrismaFindUnique.mockResolvedValue({
         orderId: defaultOrderId,
         status: "success",
@@ -251,7 +252,7 @@ describe("POST /api/payment/notification", () => {
     });
 
     it("returns 200, logs console.warn, and skips update when invoice status is 'failed'", async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(webhookLogger, "warn").mockImplementation(() => {});
       mockPrismaFindUnique.mockResolvedValue({
         orderId: defaultOrderId,
         status: "failed",
@@ -365,7 +366,7 @@ describe("POST /api/payment/notification", () => {
   // ── Concurrency & race condition handling ──────────────────────────────────
   describe("concurrency and race condition handling (atomic conditional update)", () => {
     it("handles race condition gracefully when concurrent webhook already finalized invoice (count: 0)", async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(webhookLogger, "warn").mockImplementation(() => {});
       mockPrismaFindUnique
         .mockResolvedValueOnce({
           orderId: defaultOrderId,
@@ -450,7 +451,7 @@ describe("POST /api/payment/notification", () => {
     });
 
     it("logs a warning when transaction_time is missing from statusResponse and falls back to server time", async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(webhookLogger, "warn").mockImplementation(() => {});
       mockPrismaFindUnique.mockResolvedValue({ orderId: defaultOrderId, status: "pending" });
       mockNotification.mockResolvedValue({
         order_id: defaultOrderId,
@@ -471,7 +472,7 @@ describe("POST /api/payment/notification", () => {
   // ── AC-4: 500 Server error handling in Bahasa Indonesia ────────────────────
   describe("server error handling (AC-1, AC-3, AC-4)", () => {
     it("returns 500 with Indonesian message without leaking details when an unhandled error occurs", async () => {
-      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const errSpy = vi.spyOn(webhookLogger, "error").mockImplementation(() => {});
       mockPrismaFindUnique.mockRejectedValue(new Error("Unexpected DB crash"));
 
       const response = await POST(makeRequest(validPayload));

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { ClientTopUpProps, TopUpProduct } from '@/lib/types';
+import type { ClientTopUpProps, TopUpProduct } from '@/lib/types/game';
+import { getMidtransSnapUrl } from '@/lib/payment/midtrans';
 import TitleGameAlertDialog from './TitleGameAlertDialog';
 import AccountInfoSection from './AccountInfoSection';
 import ProductSelectionSection from './ProductSelectionSection';
@@ -32,7 +33,7 @@ export const ClientTopUp = ({ gameId, gameInfo, products }: ClientTopUpProps) =>
   // Injeksi Midtrans Snap script
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    script.src = getMidtransSnapUrl();
     script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '');
     document.head.appendChild(script);
 

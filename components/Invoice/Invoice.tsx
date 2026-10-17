@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { InvoiceData, SnapResponse } from '@/lib/types';
+import type { InvoiceData, SnapResponse } from '@/lib/types/payment';
 import { Loader2 } from 'lucide-react';
 import InvoiceDetails from './InvoiceDetails';
-import { getErrorMessage } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/utils/utils';
+import { getMidtransSnapUrl } from '@/lib/payment/midtrans';
 
 
 const Invoice = () => {
@@ -20,7 +21,7 @@ const Invoice = () => {
 
     useEffect(() => {
         const script = document.createElement('script');
-        script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+        script.src = getMidtransSnapUrl();
         script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '');
         document.head.appendChild(script);
 

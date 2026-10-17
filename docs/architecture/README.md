@@ -32,9 +32,9 @@ graph TB
         API_Payment["Rute Pembuatan Transaksi\n(app/api/payment/route.ts)"]
         API_Webhook["Rute Webhook Notifikasi\n(app/api/payment/notification/route.ts)"]
 
-        Security_Module["Lapisan Proteksi Keamanan\n(lib/rate-limit.ts & lib/validations/)"]
-        Catalog_Data["Katalog Master Game & Produk\n(lib/datas/)"]
-        Prisma_Client["Prisma ORM Client Singleton\n(lib/prisma.ts)"]
+        Security_Module["Lapisan Proteksi Keamanan\n(lib/cache/rate-limit.ts & lib/payment/validations/)"]
+        Catalog_Data["Katalog Master Game & Produk\n(lib/content/datas/)"]
+        Prisma_Client["Prisma ORM Client Singleton\n(lib/db/prisma.ts)"]
     end
 
     subgraph Eksternal ["Infrastruktur Eksternal & Layanan Pihak Ketiga"]
@@ -76,10 +76,10 @@ graph TB
 | Antarmuka Top Up | `components/TitleGame/` | Menampilkan pilihan voucher game, form data akun, pemilihan nominal, validasi formulir sisi klien, dan peluncuran modal pembayaran Snap. |
 | Rute Pembayaran | `app/api/payment/route.ts` | Menerima permohonan pembayaran, membatasi laju request via Redis, memvalidasi skema data masukan, mencocokkan harga resmi dari katalog server, membuat transaksi di Midtrans, dan mencatat invoice ke database. |
 | Rute Webhook | `app/api/payment/notification/route.ts` | Menerima notifikasi status pembayaran asinkron dari Midtrans, memverifikasi tanda tangan digital, mencegah eksekusi ganda (idempotency), dan memperbarui status invoice di database. |
-| Rate Limiter | `lib/rate-limit.ts` & `lib/redis.ts` | Mengekstrak alamat IP klien tepercaya, menghitung frekuensi permintaan dengan algoritma sliding window berbasis Redis Cloud TCP, dan mengaktifkan proteksi fail open jika Redis mengalami gangguan. |
-| Validasi Skema | `lib/validations/payment.ts` | Memastikan struktur data pembayaran memenuhi standar ketat menggunakan Zod sebelum diteruskan ke logika bisnis atau database. |
-| Katalog Produk | `lib/datas/productData.ts` & `gameData.ts` | Sumber kebenaran tunggal untuk daftar game resmi, kebutuhan server ID, dan nominal harga produk yang tidak dapat dimanipulasi oleh klien. |
-| Basis Data & ORM | `prisma/schema.prisma` & `lib/prisma.ts` | Mengelola skema tabel `Invoice`, `Game`, dan `Product` serta menyediakan klien koneksi basis data PostgreSQL tunggal (singleton). |
+| Rate Limiter | `lib/cache/rate-limit.ts` & `lib/cache/redis.ts` | Mengekstrak alamat IP klien tepercaya, menghitung frekuensi permintaan dengan algoritma sliding window berbasis Redis Cloud TCP, dan mengaktifkan proteksi fail open jika Redis mengalami gangguan. |
+| Validasi Skema | `lib/payment/validations/payment.ts` | Memastikan struktur data pembayaran memenuhi standar ketat menggunakan Zod sebelum diteruskan ke logika bisnis atau database. |
+| Katalog Produk | `lib/content/datas/productData.ts` & `gameData.ts` | Sumber kebenaran tunggal untuk daftar game resmi, kebutuhan server ID, dan nominal harga produk yang tidak dapat dimanipulasi oleh klien. |
+| Basis Data & ORM | `prisma/schema.prisma` & `lib/db/prisma.ts` | Mengelola skema tabel `Invoice`, `Game`, dan `Product` serta menyediakan klien koneksi basis data PostgreSQL tunggal (singleton). |
 | Halaman Invoice | `app/invoice/[orderId]/` | Menampilkan rincian pesanan, nomor invoice, status pembayaran terkini, instruksi pembayaran, dan bukti transaksi kepada pelanggan. |
 
 ---
@@ -88,5 +88,5 @@ graph TB
 
 Sistem saat ini dikonfigurasi untuk berjalan pada mode sandbox secara default selama tahap pengembangan dan pengujian keamanan:
 - Parameter `isProduction` dikendalikan secara dinamis melalui environment variable `MIDTRANS_IS_PRODUCTION` (string `"true"` untuk mode produksi, selain itu fallback ke sandbox) pada instansiasi Snap client di `app/api/payment/route.ts` dan `app/api/payment/notification/route.ts`.
-- Script Midtrans Snap di `components/TitleGame/ClientTopUp.tsx` memuat berkas script sandbox `https://app.sandbox.midtrans.com/snap/snap.js`.
-- Sebelum sistem diluncurkan ke tahap produksi nyata, atur `MIDTRANS_IS_PRODUCTION=true` serta perbarui server key dan client key Midtrans ke kredensial produksi pada environment deployment (misalnya Vercel).
+- Script Midtrans Snap di `components/TitleGame/ClientTopUp.tsx` dan `components/Invoice/Invoice.tsx` memuat berkas script secara dinamis melalui helper `getMidtransSnapUrl()` (`lib/payment/midtrans.ts`) berdasarkan nilai `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION` (string `"true"` untuk production, selain itu fallback ke sandbox).
+- Sebelum sistem diluncurkan ke tahap produksi nyata, atur `MIDTRANS_IS_PRODUCTION=true` dan `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION=true` serta perbarui server key dan client key Midtrans ke kredensial produksi pada environment deployment (misalnya Vercel).

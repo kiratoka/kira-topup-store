@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ShieldCheck, CreditCard, CircleDollarSign, AlertTriangle } from 'lucide-react';
-import { GameInfo } from '@/lib/types';
+import type { GameInfo } from '@/lib/types/game';
 
 interface BenefitsSidebarProps {
   gameInfo: GameInfo;

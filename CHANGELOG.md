@@ -6,6 +6,30 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.3.0-alpha] - 2026-10-17
+
+### Added
+- Modul middleware Next.js di proxy.ts yang menyuntikkan header pelacakan unik x-request-id untuk setiap request API serta memverifikasi header Content-Type dan header Origin (lihat spec 0010).
+- Sistem pencatatan log terstruktur berbasis pustaka Pino di lib/logging/logger.ts yang memformat log ke format JSON, menyunting otomatis data pribadi atau kredensial rahasia, serta menyediakan child logger khusus untuk setiap domain seperti paymentLogger, webhookLogger, redisLogger, invoiceLogger, dan dbLogger (lihat spec 0009 dan spec 0010).
+- Skrip Lua atomik untuk pembatasan laju Redis di lib/cache/rate-limit.ts yang mengeksekusi operasi inkremen dan penetapan masa kedaluwarsa secara bersamaan serta memperbaiki kunci Redis yang kehilangan waktu kedaluwarsa (lihat spec 0006).
+- Modul penyamaran data pribadi pelanggan di lib/security/masking.ts untuk menyensor alamat email pada respons invoice publik (lihat spec 0006).
+- Rangkaian pengujian otomatis baru dengan Vitest untuk middleware proxy, child logger Pino, konfigurasi logging Prisma, serta pembatasan origin CSP.
+
+### Changed
+- Restrukturisasi total direktori lib/ menjadi enam subfolder domain modular (db/, cache/, payment/, security/, content/, utils/) dan folder types/ terpisah untuk meningkatkan keterbacaan serta memudahkan perawatan kode (lihat spec 0008).
+- Seluruh panggilan console.error, console.warn, dan console.log pada file sisi server diganti dengan child logger Pino yang sesuai dengan domain masing masing (lihat spec 0010).
+- Konfigurasi Prisma Client di lib/db/prisma.ts diselaraskan dengan child logger dbLogger yang hanya mengalirkan log error di produksi serta mengalirkan rincian query dan durasi eksekusi saat development (lihat spec 0009).
+- Rute invoice GET /api/invoice dan GET /api/invoice/[orderId] kini menerapkan pembatasan laju pemanggilan sebesar 30 request per menit berbasis Redis dan menyamarkan email pembeli (lihat spec 0006).
+- Token pembayaran Snap Midtrans pada respons invoice otomatis dikosongkan ketika status transaksi sudah bukan pending (lihat spec 0006).
+
+### Security
+- Pengetatan Content Security Policy (CSP) dan konfigurasi remotePatterns Next.js di next.config.ts dengan membatasi domain asal gambar hanya ke host tepercaya tanpa karakter wildcard (lihat spec 0007).
+- Perlindungan endpoint POST API dari serangan Cross Site Request Forgery dan muatan tidak valid melalui validasi Content-Type application/json dan pemeriksaan header Origin di proxy.ts (lihat spec 0010).
+- Pencegahan kebocoran data pribadi (PII) dan kredensial rahasia seperti email, token, server key, dan connection string melalui sistem redaksi otomatis pada logger server (lihat spec 0010).
+- Mitigasi eksploitasi data pengguna (IDOR) pada endpoint invoice publik dengan menyamarkan email pelanggan dan membersihkan token pembayaran transaksi yang sudah selesai (lihat spec 0006).
+- Eliminasi celah kondisi balapan (race condition) pada pembatasan laju Redis melalui eksekusi skrip Lua atomik (lihat spec 0006).
+- Pencegahan kebocoran data query database dan parameter SQL ke log produksi melalui pembatasan event listener Prisma Client (lihat spec 0009).
+
 ## [0.2.0-alpha] - 2026-10-14
 
 ### Added

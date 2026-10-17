@@ -1,7 +1,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { gamesData } from '@/lib/datas/gameData';
-import { productsData } from '@/lib/datas/productData';
+import { gamesData } from '@/lib/content/datas/gameData';
+import { productsData } from '@/lib/content/datas/productData';
 import ClientTopUp from '@/components/TitleGame/ClientTopUp';
 import GameHeader from '@/components/TitleGame/GameHeader';
 

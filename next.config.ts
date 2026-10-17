@@ -34,7 +34,7 @@ const nextConfig = {
               "default-src 'self'; " +
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.sandbox.midtrans.com https://app.midtrans.com; " +
               "style-src 'self' 'unsafe-inline'; " +
-              "img-src 'self' data: https:; " +
+              "img-src 'self' data: https://cdn1.codashop.com https://asetto.nawalakarsa.id https://hybrid.co.id https://app.sandbox.midtrans.com https://app.midtrans.com; " +
               "font-src 'self' data:; " +
               "connect-src 'self' https://app.sandbox.midtrans.com https://app.midtrans.com; " +
               "frame-src https://app.sandbox.midtrans.com https://app.midtrans.com; " +
@@ -62,7 +62,15 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'cdn1.codashop.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'asetto.nawalakarsa.id',
+      },
+      {
+        protocol: 'https',
+        hostname: 'hybrid.co.id',
       },
     ],
   },

@@ -1,4 +1,4 @@
-import { getAllPosts } from '@/lib/mdx';
+import { getAllPosts } from '@/lib/content/mdx';
 import BlogCard from '@/components/Blog/BlogCard';
 
 export const metadata = {
