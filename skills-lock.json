@@ -43,6 +43,12 @@
       "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
       "computedHash": "3a46e9093baecb3a85819529ce05006f817663f48d9e872868c32ae6049c0d5c"
     },
+    "pino-logging": {
+      "source": "oakoss/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pino-logging/SKILL.md",
+      "computedHash": "095954576d4fa9fb7d6569c4525db933691aef99a0c75b5a3aba7ba383def967"
+    },
     "redis-core": {
       "source": "redis/agent-skills",
       "sourceType": "github",

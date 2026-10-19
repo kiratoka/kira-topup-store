@@ -6,6 +6,26 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.3.1-alpha] - 2026-10-19
+
+### Added
+- Integrasi favicon resmi, apple touch icon, dan logo Kira Topup berformat WebP pada bilah navigasi dan metadata aplikasi di app/layout.tsx.
+
+### Changed
+- Penyesuaian tata letak StickyCheckoutBar agar lebih ringkas dan proporsional pada layar ponsel dengan informasi produk dan nominal yang adaptif.
+- Label tombol aksi StickyCheckoutBar kini dinamis menyesuaikan tahapan pilihan pengguna (seperti Pilih Item, Lanjutkan, atau Bayar Sekarang).
+- Penyesuaian lebar kondisi tertutup sidebar desktop dari 72px menjadi 80px untuk tampilan logo dan navigasi yang lebih lapang.
+
+### Fixed
+- Eliminasi tumpang tindih navigasi mobile pada rute /topup dengan menyembunyikan bilah navigasi bawah mobile sehingga tidak menutupi StickyCheckoutBar.
+- Koreksi perilaku sticky header GameHeader pada layar ponsel agar tidak tumpang tindih dengan header navigasi utama.
+- Penambahan ruang batas bawah pada kontainer ClientTopUp agar daftar produk dan formulir tidak tertutup oleh bilah checkout melayang.
+- Penyelarasan posisi horizontal StickyCheckoutBar dengan variabel CSS --sidebar-w pada desktop agar mengikuti animasi buka tutup bilah samping.
+- Penambahan bantalan area aman layar (safe area inset) pada StickyCheckoutBar untuk kenyamanan gestur navigasi ponsel modern.
+
+### Performance
+- Optimasi pemuatan gambar Next.js pada halaman beranda, kartu blog, dan posting blog dengan menyertakan atribut sizes yang responsif serta prioritas muat LCP untuk mengeliminasi peringatan performa.
+
 ## [0.3.0-alpha] - 2026-10-17
 
 ### Added

@@ -18,6 +18,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Kira Topup Store",
   description: "Tempat Topup Game Terpercaya",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/Kira_logo_icon.webp", type: "image/webp" },
+    ],
+    shortcut: "/Kira_logo_icon.webp",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({

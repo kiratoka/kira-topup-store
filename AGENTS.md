@@ -4,7 +4,7 @@
 
 - **Language / Runtime**: TypeScript, Node 20
 - **Framework**: Next.js 16 (App Router)
-- **Key dependencies**: Prisma 6 (PostgreSQL), Midtrans (payment gateway), Upstash Redis (rate limiting), Tailwind CSS v3, shadcn/ui (Radix primitives)
+- **Key dependencies**: Prisma 6 (PostgreSQL), Midtrans (payment gateway), Upstash Redis (rate limiting), Pino (structured logging), Tailwind CSS v3, shadcn/ui (Radix primitives)
 - **Package manager**: npm
 
 ## Build approach
@@ -135,10 +135,13 @@ Buka window baru jika pekerjaan berikutnya membutuhkan **fokus penuh model tanpa
 - UI components come from `components/ui/` (shadcn wrappers). Add new shadcn components there; do not build from scratch.
 - Midtrans mode is driven by `MIDTRANS_IS_PRODUCTION` env var (string `"true"` = production). Set this in your deployment platform. Never hardcode it.
 - All public API error responses must use the `apiError` helper from `lib/security/errors.ts`; never leak internal error details or raw exception messages.
+- Server-side code in `app/api/` and `lib/` must use structured logging via domain child loggers from `lib/logging/logger.ts`; raw `console.*` is strictly prohibited by ESLint.
+- API request headers (Content-Type, Origin, request ID) are validated globally by Next.js middleware in `proxy.ts`.
 
 ## Agent skills
 
 - [nextjs-app-router-patterns](.agents/skills/nextjs-app-router-patterns/): `wshobson/agents@nextjs-app-router-patterns`, Next.js App Router conventions, data fetching patterns, and caching
+- [pino-logging](.agents/skills/pino-logging/): `oakoss/agent-skills@pino-logging`, Pino high-performance JSON logger, correlation IDs, child loggers, redaction, and worker thread transports
 - [redis-core](.agents/skills/redis-core/): `redis/agent-skills@redis-core`, Redis command conventions, data modeling, and performance patterns
 - [vitest](.agents/skills/vitest/): `antfu/skills@vitest`, Vitest unit and integration test runner conventions and assertions
 - [zod](.agents/skills/zod/): `pproenca/dot-skills@zod`, Zod schema validation, type parsing, and safe parsing patterns

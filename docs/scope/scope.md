@@ -172,7 +172,7 @@ Menerapkan Next.js middleware global untuk memvalidasi header request API serta 
     - [x] Ganti seluruh console.* di 6 file server side dengan child logger domain (AC-7)
     - [x] Tambah ESLint no-console dan unit/integration test (AC-1 sampai AC-9)
 - [x] Verify it: `/check verify security-middleware-logging`
-- [ ] Test it: `/test security-middleware-logging`
+- [x] Test it: `/test security-middleware-logging` (proxy.test.ts, logger.test.ts, prisma.test.ts)
 - [ ] Review it (fresh model): `/check review security-middleware-logging`
 - [x] Document it: `/document security-middleware-logging`
 Spec [0010](../specs/0010-security-middleware-logging/index.md) · code in `proxy.ts`, `lib/logging/logger.ts`, and all `app/api/` routes

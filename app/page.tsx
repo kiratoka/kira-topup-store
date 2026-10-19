@@ -83,6 +83,8 @@ export default function Home() {
                       src={game.image}
                       alt={`${game.name} Logo`}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 215px"
+                      priority={index === 0}
                       className="object-cover"
                       style={{ objectPosition: "center" }}
                     />

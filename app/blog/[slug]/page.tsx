@@ -38,6 +38,8 @@ export default async function BlogPostPage({ params }: Props) {
           src={post.frontMatter.coverImage}
           alt={post.frontMatter.title}
           fill
+          sizes="100vw"
+          priority
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/80"></div>

@@ -3,8 +3,12 @@ import { motion } from "framer-motion";
 import React, { useState, useEffect, useRef } from "react";
 import { Home, User, Mail, Settings, Menu, BookOpen, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 const Navbar = ({ children }: { children: React.ReactNode }) => {
+    const pathname = usePathname();
+    const isCheckoutOrTopup = pathname?.startsWith('/topup');
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const navRef = useRef<HTMLDivElement>(null);
@@ -38,7 +42,7 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
 
     const variants = {
         open: { width: 240 },
-        closed: { width: 72 },
+        closed: { width: 80 },
     };
 
     const itemVariants = {
@@ -76,14 +80,22 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
     // Mobile Layout
     if (isMobile) {
         return (
-            <div className="min-h-screen">
+            <div className="min-h-screen" style={{ '--sidebar-w': '0px' } as React.CSSProperties}>
                 {/* Mobile Top Header */}
                 <header className="sticky top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 px-4 py-3">
                     <div className="flex items-center justify-between">
-                        <Link href="/">
-                        <h1 className="text-gray-300 font-bold text-xl">
-                            Kira<span className="text-cyan-500">TopUp</span>
-                        </h1>
+                        <Link href="/" className="flex items-center gap-2.5">
+                            <Image
+                                src="/Kira_logo_icon.webp"
+                                alt="Kira Topup Logo"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 rounded-lg object-contain shrink-0"
+                                priority
+                            />
+                            <h1 className="text-white font-bold text-lg tracking-tight">
+                                Kira Topup
+                            </h1>
                         </Link>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
@@ -121,31 +133,33 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
                 </header>
 
                 {/* Mobile Bottom Navigation Alternative */}
-                <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 px-2 py-2">
-                    <div className="flex justify-around items-center">
-                        {menuItems.slice(0, 4).map((item, index) => (
-                            <Link href={item.link} key={index}>
-                                <motion.div
-                                    whileTap={{ scale: 0.9 }}
-                                    className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-400 hover:text-cyan-400 transition-colors"
-                                >
-                                    {item.icon}
-                                    <span className="text-xs font-medium">{item.text}</span>
-                                </motion.div>
-                            </Link>
-                        ))}
-                        <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                            <Menu className="w-5 h-5" />
-                            <span className="text-xs font-medium">More</span>
-                        </button>
-                    </div>
-                </nav>
+                {!isCheckoutOrTopup && (
+                    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 px-2 py-2">
+                        <div className="flex justify-around items-center">
+                            {menuItems.slice(0, 4).map((item, index) => (
+                                <Link href={item.link} key={index}>
+                                    <motion.div
+                                        whileTap={{ scale: 0.9 }}
+                                        className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-400 hover:text-cyan-400 transition-colors"
+                                    >
+                                        {item.icon}
+                                        <span className="text-xs font-medium">{item.text}</span>
+                                    </motion.div>
+                                </Link>
+                            ))}
+                            <button
+                                onClick={() => setIsOpen(!isOpen)}
+                                className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-400 hover:text-cyan-400 transition-colors"
+                            >
+                                <Menu className="w-5 h-5" />
+                                <span className="text-xs font-medium">More</span>
+                            </button>
+                        </div>
+                    </nav>
+                )}
 
                 {/* Mobile Content */}
-                <main>
+                <main className={!isCheckoutOrTopup ? "pb-16" : ""}>
                     {children}
                 </main>
             </div>
@@ -154,11 +168,11 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
 
     // Desktop Layout (Original)
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen" style={{ '--sidebar-w': isOpen ? '240px' : '80px', transition: '--sidebar-w 0.15s ease' } as React.CSSProperties}>
             {/* Desktop Sidebar */}
             <motion.div
                 ref={navRef}
-                initial={{ width: 72 }}
+                initial={{ width: 80 }}
                 animate={isOpen ? "open" : "closed"}
                 variants={variants}
                 className="h-screen bg-gray-900 shadow-xl p-4 flex-col z-50 border-r border-gray-700 sticky top-0"
@@ -172,16 +186,23 @@ const Navbar = ({ children }: { children: React.ReactNode }) => {
                     }}
                     className="z-20 p-2 bg-gray-900 rounded-lg flex items-center justify-between w-full hover:bg-gray-800 transition-colors"
                 >
-                    <div className="flex items-center gap-4">
-                        <Menu className="w-6 h-6 text-gray-300" />
+                    <div className="flex items-center gap-3">
+                        <Image
+                            src="/Kira_logo_icon.webp"
+                            alt="Kira Topup Logo"
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 rounded-lg object-contain shrink-0"
+                            priority
+                        />
                         <motion.div
                             variants={itemVariants}
                             initial="closed"
                             animate={isOpen ? "open" : "closed"}
                             className="flex items-center"
                         >
-                            <h1 className="text-gray-300 font-bold text-xl whitespace-nowrap">
-                                Kira<span className="text-cyan-500">TopUp</span>
+                            <h1 className="text-white font-bold text-lg whitespace-nowrap">
+                                Kira Topup
                             </h1>
                         </motion.div>
                     </div>

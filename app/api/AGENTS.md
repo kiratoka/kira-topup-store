@@ -12,6 +12,9 @@ Handles payment creation and Midtrans webhook notifications. Two routes live her
 | `app/api/payment/notification/route.ts` | `POST /api/payment/notification` — Midtrans webhook; verifies signature, updates Invoice status |
 | `app/api/invoice/[orderId]/route.ts` | `GET /api/invoice/[orderId]` — retrieves invoice details, sanitized error handling |
 | `app/api/invoice/route.ts` | `GET /api/invoice` — query invoice by orderId parameter with validation |
+| `lib/logging/logger.ts` | Structured JSON logger with domain child loggers (`paymentLogger`, `webhookLogger`, `invoiceLogger`) and data redaction |
+| `lib/security/masking.ts` | PII sanitization helper (`maskEmail`, `sanitizeInvoice`) for invoice responses |
+| `proxy.ts` | Next.js Edge middleware for API request ID, Content-Type, and Origin validation |
 | `lib/security/errors.ts` | `apiError` helper for standardized API error responses |
 | `lib/env.ts` | Zod schema validation for mandatory environment variables at startup |
 | `lib/cache/rate-limit.ts` | Sliding window rate limiter backed by Redis Cloud, with trusted IP extraction |
@@ -35,16 +38,21 @@ Handles payment creation and Midtrans webhook notifications. Two routes live her
 - Customer info stored as `Json` in DB. Access via `invoice.customer` which matches `CustomerDetails`.
 - Game custom data passed to Midtrans via `custom_field1` (gameId), `custom_field2` (serverId), `custom_field3` (userId).
 - Error sanitization: All API routes return standardized error responses using the `apiError(message, status, code?, extra?)` helper from `lib/security/errors.ts` (`{ success: false, message, ... }`) in Indonesian without leaking internal error details, stack traces, or raw exception messages.
+- Structured logging: All server-side logging in API routes must use domain child loggers from `lib/logging/logger.ts` (`paymentLogger`, `webhookLogger`, `invoiceLogger`). Raw `console.*` is strictly prohibited by ESLint.
+- Invoice data masking: Both invoice endpoints (`/api/invoice` and `/api/invoice/[orderId]`) apply PII sanitization via `sanitizeInvoice` from `lib/security/masking.ts`, obfuscating customer emails and nullifying Snap payment tokens once transactions leave pending status.
 - Environment guard: Mandatory environment variables are validated at startup via `lib/env.ts` (`envSchema.safeParse`), failing fast if any required variables are missing.
 
 ## Gotchas
 
 - To go live: set `MIDTRANS_IS_PRODUCTION=true` in your deployment platform env vars and swap `MIDTRANS_SERVER_KEY` / `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` to production keys. No code changes needed.
-- The rate limiter uses two Redis keys per IP (`rate-limit:<ip>` and `rate-limit:<ip>:resetTime`, or prefixed like `rate-limit:webhook:<ip>`). The TTL is set only on the count key; if Redis restarts between the window update and the TTL set, the count key may outlive the window. This is low risk in production but worth noting.
+- The rate limiter executes an atomic Lua script (`RATE_LIMIT_LUA_SCRIPT` in `lib/cache/rate-limit.ts`) combining `INCR` and conditional `EXPIRE` with automatic self-healing if `TTL == -1`, eliminating race conditions and orphaned keys.
 - Automated test suite covers payment route (`app/api/payment/route.test.ts`), webhook notification route (`app/api/payment/notification/route.test.ts`), invoice routes (`app/api/invoice/route.test.ts`, `app/api/invoice/[orderId]/route.test.ts`), and schema validation with Vitest.
 
 ## Related specs
 
+- [0010 Security middleware and structured logging](../../docs/specs/0010-security-middleware-logging/index.md): request correlation, Content-Type/Origin proxy guard, and Pino domain logging
+- [0008 Standardize lib/ folder structure](../../docs/specs/0008-lib-folder-structure/index.md): domain-driven reorganization of lib/ modules
+- [0006 Invoice rate limiting and data masking](../../docs/specs/0006-invoice-rate-limiting-data-masking.md): Redis rate limiting on GET /api/invoice and PII data masking
 - [0005 Error sanitization and environment guard](../../docs/specs/0005-error-sanitization-env-guard/index.md): standardized error response shape with apiError helper, Indonesian messages, and fail-fast startup env guard
 - [0003 Webhook Security and Idempotency](../../docs/specs/0003-webhook-security-idempotency/index.md): timing-safe signature verification, isolated rate limiting, and idempotent notification handling
 - [0002 Server side price validation](../../docs/specs/0002-server-side-price-validation/index.md): server-side pricing authority and Zod input schema guard

@@ -10,7 +10,7 @@ interface GameHeaderProps {
 
 export const GameHeader: React.FC<GameHeaderProps> = ({ gameInfo }) => {
   return (
-    <header className="border-b border-slate-800/80 bg-[#070c18]/90 backdrop-blur-md sticky top-0 z-30">
+    <header className="border-b border-slate-800/80 bg-[#070c18]/90 backdrop-blur-md relative sm:sticky sm:top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
         <div className="flex items-center space-x-3.5 sm:space-x-4">
           <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border border-cyan-500/30 bg-[#091224] shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center justify-center p-0.5">
